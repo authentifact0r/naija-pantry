@@ -1,17 +1,26 @@
 import { NextResponse, type NextRequest } from "next/server";
 
+// Known platform domains (not tenant subdomains)
+const PLATFORM_HOSTS = ["vercel.app", "localhost", "authentifactor.com"];
+
 function resolveTenantSlug(request: NextRequest): string {
-  // Dev override
+  // Dev/preview override via query param
   const paramSlug = request.nextUrl.searchParams.get("tenant");
   if (paramSlug) return paramSlug;
 
   const host = request.headers.get("host") ?? "";
 
-  // Extract subdomain (e.g., "naijapantry" from "naijapantry.platform.com")
-  const parts = host.split(".");
-  if (parts.length >= 3) return parts[0];
+  // Skip subdomain extraction for platform hosts (e.g., naija-pantry.vercel.app)
+  const isPlatformHost = PLATFORM_HOSTS.some((ph) => host.endsWith(ph));
+  if (isPlatformHost) return "taste-of-motherland";
 
-  // Default tenant for localhost / single-domain setup
+  // Custom domain mapping (e.g., tmfoods.co.uk → taste-of-motherland)
+  // The actual mapping is done via DB lookup in tenant.ts
+  // Here we pass the full host for custom domain resolution
+  const parts = host.split(".");
+  if (parts.length >= 3) return parts[0]; // subdomain extraction
+
+  // Default tenant
   return "taste-of-motherland";
 }
 

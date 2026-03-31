@@ -102,7 +102,7 @@ async function main() {
         isPerishable: false,
         isSubscribable: true,
         tags: ["staple", "cassava", "nigerian"],
-        images: ["/images/garri.jpg"],
+        images: ["/images/garri.svg"],
       },
     }),
     db.product.create({
@@ -117,7 +117,7 @@ async function main() {
         isPerishable: false,
         isSubscribable: true,
         tags: ["staple", "rice", "nigerian", "organic"],
-        images: ["/images/ofada-rice.jpg"],
+        images: ["/images/ofada-rice.svg"],
       },
     }),
     db.product.create({
@@ -132,7 +132,7 @@ async function main() {
         isPerishable: false,
         isSubscribable: true,
         tags: ["staple", "beans", "protein"],
-        images: ["/images/honey-beans.jpg"],
+        images: ["/images/honey-beans.svg"],
       },
     }),
     db.product.create({
@@ -147,7 +147,7 @@ async function main() {
         isPerishable: false,
         isSubscribable: true,
         tags: ["staple", "yam", "swallow"],
-        images: ["/images/pounded-yam.jpg"],
+        images: ["/images/pounded-yam.svg"],
       },
     }),
     db.product.create({
@@ -162,7 +162,7 @@ async function main() {
         isPerishable: false,
         isSubscribable: true,
         tags: ["soup", "seeds", "nigerian"],
-        images: ["/images/egusi.jpg"],
+        images: ["/images/egusi.svg"],
       },
     }),
     db.product.create({
@@ -177,7 +177,7 @@ async function main() {
         isPerishable: false,
         isFragile: true,
         tags: ["oil", "cooking", "essential"],
-        images: ["/images/palm-oil.jpg"],
+        images: ["/images/palm-oil.svg"],
       },
     }),
     db.product.create({
@@ -192,7 +192,7 @@ async function main() {
         isPerishable: false,
         isSubscribable: true,
         tags: ["noodles", "instant", "popular"],
-        images: ["/images/indomie.jpg"],
+        images: ["/images/indomie.svg"],
       },
     }),
     db.product.create({
@@ -206,7 +206,7 @@ async function main() {
         weightKg: 1.0,
         isPerishable: true,
         tags: ["fish", "protein", "frozen"],
-        images: ["/images/catfish.jpg"],
+        images: ["/images/catfish.svg"],
       },
     }),
 
@@ -222,7 +222,7 @@ async function main() {
         weightKg: 0.2,
         isPerishable: false,
         tags: ["spice", "suya", "bbq", "nigerian"],
-        images: ["/images/suya-spice.jpg"],
+        images: ["/images/suya-spice.svg"],
       },
     }),
     db.product.create({
@@ -236,7 +236,7 @@ async function main() {
         weightKg: 0.1,
         isPerishable: true,
         tags: ["seasoning", "fermented", "traditional"],
-        images: ["/images/ogiri.jpg"],
+        images: ["/images/ogiri.svg"],
       },
     }),
     db.product.create({
@@ -250,7 +250,7 @@ async function main() {
         weightKg: 0.15,
         isPerishable: false,
         tags: ["pepper", "hot", "spicy"],
-        images: ["/images/cameroon-pepper.jpg"],
+        images: ["/images/cameroon-pepper.svg"],
       },
     }),
     db.product.create({
@@ -264,7 +264,7 @@ async function main() {
         weightKg: 0.2,
         isPerishable: false,
         tags: ["seafood", "seasoning", "essential"],
-        images: ["/images/crayfish.jpg"],
+        images: ["/images/crayfish.svg"],
       },
     }),
 
@@ -281,7 +281,7 @@ async function main() {
         isPerishable: false,
         isFragile: true,
         tags: ["malt", "non-alcoholic", "drink"],
-        images: ["/images/maltina.jpg"],
+        images: ["/images/maltina.svg"],
       },
     }),
     db.product.create({
@@ -296,7 +296,7 @@ async function main() {
         isPerishable: false,
         isSubscribable: true,
         tags: ["traditional", "hibiscus", "zobo"],
-        images: ["/images/zobo.jpg"],
+        images: ["/images/zobo.svg"],
       },
     }),
 
@@ -312,7 +312,7 @@ async function main() {
         weightKg: 0.5,
         isPerishable: false,
         tags: ["skincare", "natural", "moisturizer"],
-        images: ["/images/shea-butter.jpg"],
+        images: ["/images/shea-butter.svg"],
       },
     }),
     db.product.create({
@@ -326,7 +326,7 @@ async function main() {
         weightKg: 0.15,
         isPerishable: false,
         tags: ["soap", "natural", "skincare"],
-        images: ["/images/dudu-osun.jpg"],
+        images: ["/images/dudu-osun.svg"],
       },
     }),
   ]);
@@ -374,7 +374,7 @@ async function main() {
       prepTime: 30,
       cookTime: 45,
       servings: 6,
-      image: "/images/recipes/jollof-rice.jpg",
+      image: "/images/recipes/jollof-rice.svg",
       instructions: `## Ingredients\n- 3 cups Ofada rice\n- 1 can tomato paste\n- Fresh tomatoes, peppers, onions\n- Palm oil\n- Crayfish, seasoning\n\n## Steps\n1. Blend tomatoes, peppers, and onions\n2. Heat palm oil, fry onions until golden\n3. Add tomato paste, fry for 5 minutes\n4. Add blended tomato mix, cook for 20 minutes\n5. Add washed rice, stock, and seasoning\n6. Cover tightly and cook on low heat for 40 minutes\n7. Stir occasionally and let the bottom get slightly crispy (the famous "party jollof" bottom)`,
       items: {
         create: [
@@ -395,7 +395,7 @@ async function main() {
       prepTime: 20,
       cookTime: 40,
       servings: 4,
-      image: "/images/recipes/egusi-soup.jpg",
+      image: "/images/recipes/egusi-soup.svg",
       instructions: `## Steps\n1. Blend egusi seeds with a little water\n2. Heat palm oil, add onions\n3. Add egusi paste, stir-fry for 5 minutes\n4. Add stock, crayfish, and seasoning\n5. Simmer for 15 minutes\n6. Add chopped spinach and cook for 5 more minutes\n7. Serve with pounded yam or garri`,
       items: {
         create: [

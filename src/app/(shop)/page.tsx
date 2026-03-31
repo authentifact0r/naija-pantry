@@ -12,25 +12,32 @@ async function getFeaturedProducts() {
     where: { isActive: true },
     include: {
       inventoryBatches: { select: { quantity: true } },
-      flashSale: { where: { isActive: true, endsAt: { gte: new Date() } } },
+      flashSale: true,
     },
     take: 8,
     orderBy: { createdAt: "desc" },
   });
 
-  return products.map((p) => ({
-    ...p,
-    price: p.price.toString(),
-    compareAtPrice: p.compareAtPrice?.toString() ?? null,
-    weightKg: p.weightKg.toString(),
-    totalStock: p.inventoryBatches.reduce((sum, b) => sum + b.quantity, 0),
-    flashSale: p.flashSale
-      ? {
-          discountPercent: p.flashSale.discountPercent.toString(),
-          endsAt: p.flashSale.endsAt.toISOString(),
-        }
-      : null,
-  }));
+  const now = new Date();
+  return products.map((p) => {
+    const activeSale =
+      p.flashSale && p.flashSale.isActive && p.flashSale.endsAt >= now
+        ? p.flashSale
+        : null;
+    return {
+      ...p,
+      price: p.price.toString(),
+      compareAtPrice: p.compareAtPrice?.toString() ?? null,
+      weightKg: p.weightKg.toString(),
+      totalStock: p.inventoryBatches.reduce((sum, b) => sum + b.quantity, 0),
+      flashSale: activeSale
+        ? {
+            discountPercent: activeSale.discountPercent.toString(),
+            endsAt: activeSale.endsAt.toISOString(),
+          }
+        : null,
+    };
+  });
 }
 
 async function getFlashSales() {

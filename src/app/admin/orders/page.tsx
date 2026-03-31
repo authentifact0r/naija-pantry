@@ -19,7 +19,9 @@ const statusVariant: Record<string, "success" | "warning" | "destructive" | "sec
   REFUNDED: "destructive",
 };
 
-const nextStatus: Record<string, string> = {
+type UpdatableStatus = "CONFIRMED" | "PROCESSING" | "SHIPPED" | "DELIVERED" | "CANCELLED";
+
+const nextStatus: Record<string, UpdatableStatus> = {
   PENDING: "CONFIRMED",
   CONFIRMED: "PROCESSING",
   PROCESSING: "SHIPPED",
@@ -95,7 +97,7 @@ export default async function AdminOrdersPage() {
                   <div className="flex gap-1">
                     {next && (
                       <form
-                        action={updateOrderStatus.bind(null, order.id, next as any)}
+                        action={updateOrderStatus.bind(null, order.id, next)}
                       >
                         <Button variant="outline" size="sm">
                           Mark {next.toLowerCase()}

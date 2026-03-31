@@ -39,7 +39,7 @@ export function Footer() {
           </div>
         </div>
         <div className="mt-10 border-t pt-6 text-center text-xs text-gray-500">
-          &copy; {new Date().getFullYear()} NaijaPantry. All rights reserved.
+          &copy; 2026 NaijaPantry. All rights reserved.
         </div>
       </div>
     </footer>

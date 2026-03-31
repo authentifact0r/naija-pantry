@@ -1,8 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
-import { Menu, X, User, Search, ChevronDown } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Menu, X, User, Search, LogIn } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { CartSheet } from "@/components/shop/cart-sheet";
@@ -16,6 +16,14 @@ const categories = [
 
 export function Header() {
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+
+  useEffect(() => {
+    // Check auth status via a lightweight API call
+    fetch("/api/auth/me")
+      .then((res) => setIsLoggedIn(res.ok))
+      .catch(() => setIsLoggedIn(false));
+  }, []);
 
   return (
     <header className="sticky top-0 z-40 border-b border-gray-200 bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/80">
@@ -77,11 +85,20 @@ export function Header() {
 
         {/* Right actions */}
         <div className="ml-auto flex items-center gap-2">
-          <Link href="/account">
-            <Button variant="ghost" size="icon">
-              <User className="h-5 w-5" />
-            </Button>
-          </Link>
+          {isLoggedIn ? (
+            <Link href="/account">
+              <Button variant="ghost" size="icon" aria-label="My Account">
+                <User className="h-5 w-5" />
+              </Button>
+            </Link>
+          ) : (
+            <Link href="/login">
+              <Button variant="ghost" size="sm" className="gap-1.5">
+                <LogIn className="h-4 w-4" />
+                <span className="hidden sm:inline">Sign In</span>
+              </Button>
+            </Link>
+          )}
           <CartSheet />
         </div>
       </div>

@@ -1,21 +1,28 @@
 export const dynamic = "force-dynamic";
 
-import { Suspense } from "react";
 import { db } from "@/lib/db";
 import { ProductCard } from "@/components/shop/product-card";
 import { Badge } from "@/components/ui/badge";
-import type { ProductCategory } from "@prisma/client";
+import type { Prisma } from "@prisma/client";
 
 interface Props {
   searchParams: Promise<{ category?: string; q?: string; page?: string }>;
 }
 
+const VALID_CATEGORIES = ["GROCERIES", "SPICES", "DRINKS", "BEAUTY"] as const;
+type ValidCategory = (typeof VALID_CATEGORIES)[number];
+
+function isValidCategory(val: string): val is ValidCategory {
+  return (VALID_CATEGORIES as readonly string[]).includes(val);
+}
+
 async function getProducts(category?: string, query?: string, page = 1) {
   const perPage = 12;
-  const where: Record<string, unknown> = { isActive: true };
 
-  if (category && ["GROCERIES", "SPICES", "DRINKS", "BEAUTY"].includes(category)) {
-    where.category = category as ProductCategory;
+  const where: Prisma.ProductWhereInput = { isActive: true };
+
+  if (category && isValidCategory(category)) {
+    where.category = category;
   }
 
   if (query) {
@@ -28,32 +35,39 @@ async function getProducts(category?: string, query?: string, page = 1) {
 
   const [products, total] = await Promise.all([
     db.product.findMany({
-      where: where as any,
+      where,
       include: {
         inventoryBatches: { select: { quantity: true } },
-        flashSale: { where: { isActive: true, endsAt: { gte: new Date() } } },
+        flashSale: true,
       },
       skip: (page - 1) * perPage,
       take: perPage,
       orderBy: { createdAt: "desc" },
     }),
-    db.product.count({ where: where as any }),
+    db.product.count({ where }),
   ]);
 
+  const now = new Date();
   return {
-    products: products.map((p) => ({
-      ...p,
-      price: p.price.toString(),
-      compareAtPrice: p.compareAtPrice?.toString() ?? null,
-      weightKg: p.weightKg.toString(),
-      totalStock: p.inventoryBatches.reduce((sum, b) => sum + b.quantity, 0),
-      flashSale: p.flashSale
-        ? {
-            discountPercent: p.flashSale.discountPercent.toString(),
-            endsAt: p.flashSale.endsAt.toISOString(),
-          }
-        : null,
-    })),
+    products: products.map((p) => {
+      const activeSale =
+        p.flashSale && p.flashSale.isActive && p.flashSale.endsAt >= now
+          ? p.flashSale
+          : null;
+      return {
+        ...p,
+        price: p.price.toString(),
+        compareAtPrice: p.compareAtPrice?.toString() ?? null,
+        weightKg: p.weightKg.toString(),
+        totalStock: p.inventoryBatches.reduce((sum, b) => sum + b.quantity, 0),
+        flashSale: activeSale
+          ? {
+              discountPercent: activeSale.discountPercent.toString(),
+              endsAt: activeSale.endsAt.toISOString(),
+            }
+          : null,
+      };
+    }),
     total,
     totalPages: Math.ceil(total / perPage),
   };
@@ -81,12 +95,20 @@ export default async function ProductsPage({ searchParams }: Props) {
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-8">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">{title}</h1>
           <p className="mt-1 text-sm text-gray-500">{total} products</p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
+          <a href="/products">
+            <Badge
+              variant={!params.category ? "default" : "outline"}
+              className="cursor-pointer"
+            >
+              All
+            </Badge>
+          </a>
           {Object.entries(categoryLabels).map(([key, label]) => (
             <a key={key} href={`/products?category=${key}`}>
               <Badge
@@ -112,7 +134,6 @@ export default async function ProductsPage({ searchParams }: Props) {
         </div>
       )}
 
-      {/* Pagination */}
       {totalPages > 1 && (
         <div className="mt-8 flex justify-center gap-2">
           {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (

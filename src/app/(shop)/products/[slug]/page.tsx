@@ -17,11 +17,17 @@ async function getProduct(slug: string) {
       inventoryBatches: {
         select: { quantity: true, expiryDate: true, batchNumber: true, warehouse: { select: { name: true, city: true } } },
       },
-      flashSale: { where: { isActive: true, endsAt: { gte: new Date() } } },
+      flashSale: true,
     },
   });
 
   if (!product) return null;
+
+  const now = new Date();
+  const activeSale =
+    product.flashSale && product.flashSale.isActive && product.flashSale.endsAt >= now
+      ? product.flashSale
+      : null;
 
   return {
     ...product,
@@ -29,10 +35,10 @@ async function getProduct(slug: string) {
     compareAtPrice: product.compareAtPrice?.toString() ?? null,
     weightKg: product.weightKg.toString(),
     totalStock: product.inventoryBatches.reduce((sum, b) => sum + b.quantity, 0),
-    flashSale: product.flashSale
+    flashSale: activeSale
       ? {
-          discountPercent: product.flashSale.discountPercent.toString(),
-          endsAt: product.flashSale.endsAt.toISOString(),
+          discountPercent: activeSale.discountPercent.toString(),
+          endsAt: activeSale.endsAt.toISOString(),
         }
       : null,
     batches: product.inventoryBatches.map((b) => ({

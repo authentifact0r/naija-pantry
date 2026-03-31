@@ -1,34 +1,36 @@
 export const dynamic = "force-dynamic";
 
-import { db } from "@/lib/db";
+import { getScopedDb } from "@/lib/db";
+import { requireAdmin } from "@/lib/auth";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { formatPrice } from "@/lib/utils";
 import { Package, ShoppingCart, AlertTriangle, Users, TrendingUp, Clock } from "lucide-react";
 
 export default async function AdminDashboard() {
+  await requireAdmin();
+  const tdb = await getScopedDb();
+
   const now = new Date();
   const thirtyDaysFromNow = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
 
   const [
     totalProducts,
     totalOrders,
-    totalUsers,
     pendingOrders,
     lowStockBatches,
     expiringBatches,
     recentOrders,
     revenue,
   ] = await Promise.all([
-    db.product.count({ where: { isActive: true } }),
-    db.order.count(),
-    db.user.count(),
-    db.order.count({ where: { status: "PENDING" } }),
-    db.inventoryBatch.count({ where: { quantity: { lte: 10, gt: 0 } } }),
-    db.inventoryBatch.count({
+    tdb.product.count({ where: { isActive: true } }),
+    tdb.order.count(),
+    tdb.order.count({ where: { status: "PENDING" } }),
+    tdb.inventoryBatch.count({ where: { quantity: { lte: 10, gt: 0 } } }),
+    tdb.inventoryBatch.count({
       where: { expiryDate: { lte: thirtyDaysFromNow, gte: now } },
     }),
-    db.order.findMany({
+    tdb.order.findMany({
       orderBy: { createdAt: "desc" },
       take: 5,
       select: {
@@ -37,10 +39,10 @@ export default async function AdminDashboard() {
         total: true,
         status: true,
         createdAt: true,
-        user: { select: { firstName: true, lastName: true } },
+        userId: true,
       },
     }),
-    db.order.aggregate({
+    tdb.order.aggregate({
       where: { paymentStatus: "PAID" },
       _sum: { total: true },
     }),
@@ -52,7 +54,6 @@ export default async function AdminDashboard() {
     { label: "Products", value: totalProducts, icon: Package, color: "text-emerald-700 bg-emerald-50" },
     { label: "Total Orders", value: totalOrders, icon: ShoppingCart, color: "text-blue-700 bg-blue-50" },
     { label: "Revenue", value: formatPrice(totalRevenue), icon: TrendingUp, color: "text-green-700 bg-green-50" },
-    { label: "Customers", value: totalUsers, icon: Users, color: "text-purple-700 bg-purple-50" },
   ];
 
   return (
@@ -60,7 +61,7 @@ export default async function AdminDashboard() {
       <h1 className="text-2xl font-bold">Dashboard</h1>
 
       {/* Stats */}
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {stats.map(({ label, value, icon: Icon, color }) => (
           <Card key={label}>
             <CardContent className="flex items-center gap-4 p-5">
@@ -102,51 +103,49 @@ export default async function AdminDashboard() {
         </Card>
       </div>
 
-      {/* Pending + Recent */}
-      <div className="grid gap-6 lg:grid-cols-2">
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              Recent Orders
-              {pendingOrders > 0 && (
-                <Badge variant="warning">{pendingOrders} pending</Badge>
-              )}
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
-              {recentOrders.map((order) => (
-                <div
-                  key={order.id}
-                  className="flex items-center justify-between rounded-lg border p-3 text-sm"
-                >
-                  <div>
-                    <p className="font-medium">{order.orderNumber}</p>
-                    <p className="text-xs text-gray-500">
-                      {order.user.firstName} {order.user.lastName}
-                    </p>
-                  </div>
-                  <div className="text-right">
-                    <p className="font-medium">{formatPrice(Number(order.total))}</p>
-                    <Badge
-                      variant={
-                        order.status === "PENDING"
-                          ? "warning"
-                          : order.status === "DELIVERED"
-                            ? "success"
-                            : "secondary"
-                      }
-                      className="mt-1"
-                    >
-                      {order.status}
-                    </Badge>
-                  </div>
+      {/* Recent Orders */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            Recent Orders
+            {pendingOrders > 0 && (
+              <Badge variant="warning">{pendingOrders} pending</Badge>
+            )}
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-3">
+            {recentOrders.map((order) => (
+              <div
+                key={order.id}
+                className="flex items-center justify-between rounded-lg border p-3 text-sm"
+              >
+                <div>
+                  <p className="font-medium">{order.orderNumber}</p>
+                  <p className="text-xs text-gray-500">
+                    {order.createdAt.toLocaleDateString()}
+                  </p>
                 </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+                <div className="text-right">
+                  <p className="font-medium">{formatPrice(Number(order.total))}</p>
+                  <Badge
+                    variant={
+                      order.status === "PENDING"
+                        ? "warning"
+                        : order.status === "DELIVERED"
+                          ? "success"
+                          : "secondary"
+                    }
+                    className="mt-1"
+                  >
+                    {order.status}
+                  </Badge>
+                </div>
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }

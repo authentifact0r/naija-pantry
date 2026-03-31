@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { requireAdmin } from "@/lib/auth";
+import { getTenant } from "@/lib/tenant";
 import { Package, BarChart3, Warehouse, ShoppingCart, Zap, Box, LogOut } from "lucide-react";
 import { logoutAction } from "@/actions/auth";
 import { Button } from "@/components/ui/button";
@@ -25,15 +26,21 @@ export default async function AdminLayout({
     redirect("/login");
   }
 
+  const tenant = await getTenant();
+
   return (
     <div className="flex min-h-screen">
       {/* Sidebar */}
       <aside className="hidden w-60 flex-shrink-0 border-r bg-gray-50 lg:block">
         <div className="flex h-16 items-center gap-2 border-b px-6">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-900 text-sm font-bold text-white">
-            N
-          </div>
-          <span className="font-semibold text-gray-900">Admin</span>
+          {tenant.logo ? (
+            <img src={tenant.logo} alt={tenant.name} className="h-8 w-8 rounded-lg object-contain" />
+          ) : (
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg text-sm font-bold text-white" style={{ backgroundColor: tenant.primaryColor }}>
+              {tenant.name.charAt(0).toUpperCase()}
+            </div>
+          )}
+          <span className="font-semibold text-gray-900">{tenant.name} Admin</span>
         </div>
         <nav className="space-y-1 p-4">
           {navItems.map(({ href, label, icon: Icon }) => (

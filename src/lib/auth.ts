@@ -2,7 +2,6 @@ import { SignJWT, jwtVerify } from "jose";
 import { cookies } from "next/headers";
 import bcrypt from "bcryptjs";
 import { db } from "./db";
-import type { UserRole } from "@prisma/client";
 
 const JWT_SECRET = new TextEncoder().encode(
   process.env.JWT_SECRET || "fallback-dev-secret"
@@ -14,7 +13,8 @@ const REFRESH_SECRET = new TextEncoder().encode(
 export interface JWTPayload {
   userId: string;
   email: string;
-  role: UserRole;
+  tenantId: string;
+  tenantRole: string;
 }
 
 export async function hashPassword(password: string): Promise<string> {
@@ -110,37 +110,28 @@ export async function getCurrentUser() {
     const newPayload: JWTPayload = {
       userId: refreshPayload.userId,
       email: refreshPayload.email,
-      role: refreshPayload.role,
+      tenantId: refreshPayload.tenantId,
+      tenantRole: refreshPayload.tenantRole,
     };
     await setAuthCookies(newPayload);
 
-    return db.user.findUnique({
-      where: { id: refreshPayload.userId },
-      select: {
-        id: true,
-        email: true,
-        firstName: true,
-        lastName: true,
-        phone: true,
-        role: true,
-      },
-    });
+    return {
+      id: refreshPayload.userId,
+      email: refreshPayload.email,
+      tenantId: refreshPayload.tenantId,
+      tenantRole: refreshPayload.tenantRole,
+    };
   }
 
   const payload = await verifyAccessToken(accessToken);
   if (!payload) return null;
 
-  return db.user.findUnique({
-    where: { id: payload.userId },
-    select: {
-      id: true,
-      email: true,
-      firstName: true,
-      lastName: true,
-      phone: true,
-      role: true,
-    },
-  });
+  return {
+    id: payload.userId,
+    email: payload.email,
+    tenantId: payload.tenantId,
+    tenantRole: payload.tenantRole,
+  };
 }
 
 export async function requireAuth() {
@@ -151,8 +142,20 @@ export async function requireAuth() {
 
 export async function requireAdmin() {
   const user = await requireAuth();
-  if (user.role !== "ADMIN" && user.role !== "MANAGER") {
+  if (user.tenantRole !== "ADMIN" && user.tenantRole !== "MANAGER") {
     throw new Error("Forbidden");
+  }
+  return user;
+}
+
+export async function requireSuperAdmin() {
+  const user = await requireAuth();
+  const dbUser = await db.user.findUnique({
+    where: { id: user.id },
+    select: { isSuperAdmin: true },
+  });
+  if (!dbUser?.isSuperAdmin) {
+    throw new Error("Forbidden: Super admin access required");
   }
   return user;
 }

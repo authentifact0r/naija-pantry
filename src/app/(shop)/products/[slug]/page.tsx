@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import Image from "next/image";
-import { db } from "@/lib/db";
+import { getScopedDb } from "@/lib/db";
 import { formatPrice, getStockStatus } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { AddToCartButton } from "./add-to-cart-button";
@@ -11,7 +11,8 @@ interface Props {
 }
 
 async function getProduct(slug: string) {
-  const product = await db.product.findUnique({
+  const tdb = await getScopedDb();
+  const product = await tdb.product.findFirst({
     where: { slug },
     include: {
       inventoryBatches: {

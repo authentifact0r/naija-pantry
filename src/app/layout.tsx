@@ -4,12 +4,28 @@ import "./globals.css";
 
 const inter = Inter({ subsets: ["latin"] });
 
-export const metadata: Metadata = {
-  title: "NaijaPantry — Authentic Nigerian Foods",
-  description:
-    "Shop authentic Nigerian groceries, spices, drinks and beauty products. Fresh delivery across Nigeria with subscribe-and-save options.",
-  keywords: ["Nigerian food", "African groceries", "Garri", "Egusi", "Jollof Rice", "Nigerian store"],
-};
+export async function generateMetadata(): Promise<Metadata> {
+  try {
+    const { getTenant } = await import("@/lib/tenant");
+    const tenant = await getTenant();
+    return {
+      title: tenant.defaultMetaTitle || `${tenant.name} — ${tenant.tagline || "Shop Online"}`,
+      description:
+        tenant.defaultMetaDescription ||
+        `Shop quality products at ${tenant.name}. Fast delivery with subscribe-and-save options.`,
+      openGraph: tenant.defaultOgImage
+        ? { images: [{ url: tenant.defaultOgImage }] }
+        : undefined,
+    };
+  } catch {
+    // Fallback when tenant context is not available (e.g., API routes)
+    return {
+      title: "Authentifactor — Multi-Tenant Commerce",
+      description:
+        "Shop quality products online. Fresh delivery with subscribe-and-save options.",
+    };
+  }
+}
 
 export default function RootLayout({
   children,

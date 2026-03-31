@@ -1,6 +1,6 @@
 export const dynamic = "force-dynamic";
 
-import { db } from "@/lib/db";
+import { getScopedDb } from "@/lib/db";
 import { ProductCard } from "@/components/shop/product-card";
 import { Badge } from "@/components/ui/badge";
 import type { Prisma } from "@prisma/client";
@@ -18,6 +18,7 @@ function isValidCategory(val: string): val is ValidCategory {
 
 async function getProducts(category?: string, query?: string, page = 1) {
   const perPage = 12;
+  const tdb = await getScopedDb();
 
   const where: Prisma.ProductWhereInput = { isActive: true };
 
@@ -34,7 +35,7 @@ async function getProducts(category?: string, query?: string, page = 1) {
   }
 
   const [products, total] = await Promise.all([
-    db.product.findMany({
+    tdb.product.findMany({
       where,
       include: {
         inventoryBatches: { select: { quantity: true } },
@@ -44,7 +45,7 @@ async function getProducts(category?: string, query?: string, page = 1) {
       take: perPage,
       orderBy: { createdAt: "desc" },
     }),
-    db.product.count({ where }),
+    tdb.product.count({ where }),
   ]);
 
   const now = new Date();

@@ -6,6 +6,7 @@ import { Menu, X, User, Search, LogIn } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { CartSheet } from "@/components/shop/cart-sheet";
+import { useTenant } from "@/components/tenant-provider";
 
 const categories = [
   { name: "Groceries", href: "/products?category=GROCERIES" },
@@ -17,6 +18,7 @@ const categories = [
 export function Header() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const tenant = useTenant();
 
   useEffect(() => {
     // Check auth status via a lightweight API call
@@ -25,11 +27,17 @@ export function Header() {
       .catch(() => setIsLoggedIn(false));
   }, []);
 
+  const promoText = tenant.freeShippingMinimum
+    ? `Free delivery on orders over ${tenant.currency === "NGN" ? "\u20A6" : "$"}${tenant.freeShippingMinimum.toLocaleString()}`
+    : tenant.tagline || `Welcome to ${tenant.name}`;
+
+  const logoLetter = tenant.name.charAt(0).toUpperCase();
+
   return (
     <header className="sticky top-0 z-40 border-b border-gray-200 bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/80">
       {/* Top bar */}
-      <div className="bg-emerald-900 px-4 py-1.5 text-center text-xs text-emerald-100">
-        Free delivery on orders over ₦25,000 within Lagos
+      <div className="px-4 py-1.5 text-center text-xs text-emerald-100" style={{ backgroundColor: "var(--color-brand, #064E3B)" }}>
+        {promoText}
       </div>
 
       <div className="mx-auto flex h-16 max-w-7xl items-center gap-4 px-4">
@@ -45,11 +53,15 @@ export function Header() {
 
         {/* Logo */}
         <Link href="/" className="flex items-center gap-2">
-          <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-emerald-900 text-lg font-bold text-white">
-            N
-          </div>
+          {tenant.logo ? (
+            <img src={tenant.logo} alt={tenant.name} className="h-9 w-9 rounded-lg object-contain" />
+          ) : (
+            <div className="flex h-9 w-9 items-center justify-center rounded-lg text-lg font-bold text-white" style={{ backgroundColor: "var(--color-brand, #064E3B)" }}>
+              {logoLetter}
+            </div>
+          )}
           <span className="hidden text-lg font-bold text-gray-900 sm:block">
-            NaijaPantry
+            {tenant.name}
           </span>
         </Link>
 
@@ -77,7 +89,7 @@ export function Header() {
           <div className="relative mx-auto max-w-md">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
             <Input
-              placeholder="Search Nigerian foods..."
+              placeholder={`Search ${tenant.name}...`}
               className="pl-9"
             />
           </div>
@@ -108,7 +120,7 @@ export function Header() {
         <div className="border-t bg-white px-4 py-4 lg:hidden">
           <div className="relative mb-4">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
-            <Input placeholder="Search Nigerian foods..." className="pl-9" />
+            <Input placeholder={`Search ${tenant.name}...`} className="pl-9" />
           </div>
           <nav className="flex flex-col gap-1">
             {categories.map((cat) => (

@@ -1,6 +1,11 @@
+"use client";
+
 import Link from "next/link";
+import { useTenant } from "@/components/tenant-provider";
 
 export function Footer() {
+  const tenant = useTenant();
+
   return (
     <footer className="border-t bg-gray-50">
       <div className="mx-auto max-w-7xl px-4 py-12">
@@ -31,15 +36,14 @@ export function Footer() {
             </ul>
           </div>
           <div>
-            <h3 className="text-sm font-semibold text-gray-900">NaijaPantry</h3>
+            <h3 className="text-sm font-semibold text-gray-900">{tenant.name}</h3>
             <p className="mt-3 text-sm text-gray-600">
-              Authentic Nigerian foods delivered to your doorstep. From Garri to
-              Egusi, we bring the taste of home to you.
+              {tenant.tagline || `Quality products delivered to your doorstep. Shop with ${tenant.name} today.`}
             </p>
           </div>
         </div>
         <div className="mt-10 border-t pt-6 text-center text-xs text-gray-500">
-          &copy; 2026 NaijaPantry. All rights reserved.
+          &copy; {new Date().getFullYear()} {tenant.name}. All rights reserved.
         </div>
       </div>
     </footer>

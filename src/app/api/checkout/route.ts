@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
-import { db } from "@/lib/db";
+import { db, getScopedDb } from "@/lib/db";
 import { getCurrentUser } from "@/lib/auth";
+import { getTenant } from "@/lib/tenant";
 import { generateOrderNumber } from "@/lib/utils";
 import { calculateShippingOptions, findClosestWarehouse } from "@/lib/shipping";
-import { initializePayment } from "@/lib/paystack";
+import { createPaystackClient } from "@/lib/paystack";
 import type { ShippingMethod, PaymentProvider } from "@prisma/client";
 
 export async function POST(req: NextRequest) {
@@ -13,6 +14,9 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Please log in to place an order" }, { status: 401 });
     }
 
+    const tdb = await getScopedDb();
+    const tenant = await getTenant();
+
     const body = await req.json();
     const { address, shippingMethod, paymentProvider, items } = body;
 
@@ -20,7 +24,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
     }
 
-    // Create or find address
+    // Create or find address (addresses are user-global)
     const savedAddress = await db.address.create({
       data: {
         userId: user.id,
@@ -36,7 +40,7 @@ export async function POST(req: NextRequest) {
 
     // Validate products and calculate totals
     const productIds = items.map((i: { productId: string }) => i.productId);
-    const products = await db.product.findMany({
+    const products = await tdb.product.findMany({
       where: { id: { in: productIds } },
       include: {
         inventoryBatches: { select: { id: true, quantity: true, warehouseId: true, expiryDate: true } },
@@ -107,7 +111,7 @@ export async function POST(req: NextRequest) {
 
     // Create order
     const orderNumber = generateOrderNumber();
-    const order = await db.order.create({
+    const order = await tdb.order.create({
       data: {
         orderNumber,
         userId: user.id,
@@ -128,7 +132,7 @@ export async function POST(req: NextRequest) {
     // Deduct inventory (FEFO — First Expiry First Out)
     for (const item of orderItems) {
       let remaining = item.quantity;
-      const batches = await db.inventoryBatch.findMany({
+      const batches = await tdb.inventoryBatch.findMany({
         where: {
           productId: item.productId,
           quantity: { gt: 0 },
@@ -140,7 +144,7 @@ export async function POST(req: NextRequest) {
       for (const batch of batches) {
         if (remaining <= 0) break;
         const deduct = Math.min(remaining, batch.quantity);
-        await db.inventoryBatch.update({
+        await tdb.inventoryBatch.update({
           where: { id: batch.id },
           data: { quantity: { decrement: deduct } },
         });
@@ -149,17 +153,20 @@ export async function POST(req: NextRequest) {
     }
 
     // Also sync to DB cart (clear it)
-    await db.cartItem.deleteMany({ where: { userId: user.id } });
+    await tdb.cartItem.deleteMany({ where: { userId: user.id } });
 
-    // Initialize payment
+    // Initialize payment using tenant's Paystack key
     if ((paymentProvider || "PAYSTACK") === "PAYSTACK") {
       try {
-        const paymentResult = await initializePayment({
+        const paystackKey = tenant.paystackSecretKey || process.env.PAYSTACK_SECRET_KEY!;
+        const paystack = createPaystackClient(paystackKey);
+
+        const paymentResult = await paystack.initializePayment({
           email: user.email,
           amount: total,
           reference: orderNumber,
           callbackUrl: `${process.env.NEXT_PUBLIC_APP_URL}/checkout/success?order=${orderNumber}`,
-          metadata: { orderId: order.id },
+          metadata: { orderId: order.id, tenantId: tenant.id },
         });
 
         if (paymentResult.status) {

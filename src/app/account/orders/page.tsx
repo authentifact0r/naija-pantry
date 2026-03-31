@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth";
-import { db } from "@/lib/db";
+import { getScopedDb } from "@/lib/db";
 import { reorderAction } from "@/actions/orders";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -22,7 +22,9 @@ export default async function OrdersPage() {
   const user = await getCurrentUser();
   if (!user) redirect("/login");
 
-  const orders = await db.order.findMany({
+  const tdb = await getScopedDb();
+
+  const orders = await tdb.order.findMany({
     where: { userId: user.id },
     include: {
       items: { include: { product: { select: { name: true, images: true } } } },

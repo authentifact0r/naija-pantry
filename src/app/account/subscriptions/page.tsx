@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth";
-import { db } from "@/lib/db";
+import { getScopedDb } from "@/lib/db";
 import { pauseSubscription, resumeSubscription, cancelSubscription } from "@/actions/subscriptions";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -18,7 +18,9 @@ export default async function SubscriptionsPage() {
   const user = await getCurrentUser();
   if (!user) redirect("/login");
 
-  const subscriptions = await db.subscription.findMany({
+  const tdb = await getScopedDb();
+
+  const subscriptions = await tdb.subscription.findMany({
     where: { userId: user.id },
     include: { product: { select: { name: true, price: true, images: true } } },
     orderBy: { createdAt: "desc" },

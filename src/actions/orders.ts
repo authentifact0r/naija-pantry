@@ -1,10 +1,11 @@
 "use server";
 
-import { db } from "@/lib/db";
+import { db, getScopedDb } from "@/lib/db";
 import { requireAuth } from "@/lib/auth";
 import { generateOrderNumber } from "@/lib/utils";
 import { calculateShippingOptions, findClosestWarehouse } from "@/lib/shipping";
-import { initializePayment } from "@/lib/paystack";
+import { createPaystackClient } from "@/lib/paystack";
+import { getTenant } from "@/lib/tenant";
 import type { ShippingMethod, PaymentProvider } from "@prisma/client";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
@@ -18,9 +19,11 @@ interface PlaceOrderInput {
 
 export async function placeOrder(input: PlaceOrderInput) {
   const user = await requireAuth();
+  const tdb = await getScopedDb();
+  const tenant = await getTenant();
 
   // Get cart items
-  const cartItems = await db.cartItem.findMany({
+  const cartItems = await tdb.cartItem.findMany({
     where: { userId: user.id },
     include: {
       product: {
@@ -35,7 +38,7 @@ export async function placeOrder(input: PlaceOrderInput) {
     return { error: "Cart is empty" };
   }
 
-  // Validate address
+  // Validate address (addresses are user-global)
   const address = await db.address.findFirst({
     where: { id: input.addressId, userId: user.id },
   });
@@ -109,7 +112,7 @@ export async function placeOrder(input: PlaceOrderInput) {
   // Create order
   const orderNumber = generateOrderNumber();
 
-  const order = await db.order.create({
+  const order = await tdb.order.create({
     data: {
       orderNumber,
       userId: user.id,
@@ -136,7 +139,7 @@ export async function placeOrder(input: PlaceOrderInput) {
   // Deduct inventory (FEFO — First Expiry First Out)
   for (const item of orderItems) {
     let remaining = item.quantity;
-    const batches = await db.inventoryBatch.findMany({
+    const batches = await tdb.inventoryBatch.findMany({
       where: {
         productId: item.productId,
         quantity: { gt: 0 },
@@ -148,7 +151,7 @@ export async function placeOrder(input: PlaceOrderInput) {
     for (const batch of batches) {
       if (remaining <= 0) break;
       const deduct = Math.min(remaining, batch.quantity);
-      await db.inventoryBatch.update({
+      await tdb.inventoryBatch.update({
         where: { id: batch.id },
         data: { quantity: { decrement: deduct } },
       });
@@ -157,16 +160,19 @@ export async function placeOrder(input: PlaceOrderInput) {
   }
 
   // Clear cart
-  await db.cartItem.deleteMany({ where: { userId: user.id } });
+  await tdb.cartItem.deleteMany({ where: { userId: user.id } });
 
-  // Initialize payment
+  // Initialize payment using tenant's Paystack key
   if (input.paymentProvider === "PAYSTACK") {
-    const paymentResult = await initializePayment({
+    const paystackKey = tenant.paystackSecretKey || process.env.PAYSTACK_SECRET_KEY!;
+    const paystack = createPaystackClient(paystackKey);
+
+    const paymentResult = await paystack.initializePayment({
       email: user.email,
       amount: total,
       reference: orderNumber,
       callbackUrl: `${process.env.NEXT_PUBLIC_APP_URL}/checkout/verify?ref=${orderNumber}`,
-      metadata: { orderId: order.id },
+      metadata: { orderId: order.id, tenantId: tenant.id },
     });
 
     if (paymentResult.status) {
@@ -181,8 +187,9 @@ export async function placeOrder(input: PlaceOrderInput) {
 
 export async function reorderAction(orderId: string): Promise<void> {
   const user = await requireAuth();
+  const tdb = await getScopedDb();
 
-  const order = await db.order.findFirst({
+  const order = await tdb.order.findFirst({
     where: { id: orderId, userId: user.id },
     include: { items: { include: { product: true } } },
   });
@@ -193,12 +200,13 @@ export async function reorderAction(orderId: string): Promise<void> {
 
   // Add items back to cart
   for (const item of order.items) {
-    await db.cartItem.upsert({
+    await tdb.cartItem.upsert({
       where: {
-        userId_productId: { userId: user.id, productId: item.productId },
+        userId_productId_tenantId: { userId: user.id, productId: item.productId, tenantId: user.tenantId },
       },
       update: { quantity: item.quantity },
       create: {
+        tenantId: "", // injected by scoped client
         userId: user.id,
         productId: item.productId,
         quantity: item.quantity,
@@ -214,11 +222,13 @@ export async function updateOrderStatus(
   orderId: string,
   status: "CONFIRMED" | "PROCESSING" | "SHIPPED" | "DELIVERED" | "CANCELLED"
 ) {
+  const tdb = await getScopedDb();
+
   // Admin action — auth checked at route level
   const data: Record<string, unknown> = { status };
   if (status === "SHIPPED") data.shippedAt = new Date();
   if (status === "DELIVERED") data.deliveredAt = new Date();
 
-  await db.order.update({ where: { id: orderId }, data });
+  await tdb.order.update({ where: { id: orderId }, data });
   revalidatePath("/admin/orders");
 }

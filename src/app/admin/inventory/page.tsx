@@ -1,6 +1,7 @@
 export const dynamic = "force-dynamic";
 
-import { db } from "@/lib/db";
+import { getScopedDb } from "@/lib/db";
+import { requireAdmin } from "@/lib/auth";
 import { addInventoryBatch } from "@/actions/inventory";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -11,23 +12,26 @@ import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@
 import { AlertTriangle, Clock } from "lucide-react";
 
 export default async function AdminInventoryPage() {
+  await requireAdmin();
+  const tdb = await getScopedDb();
+
   const now = new Date();
   const thirtyDays = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
 
   const [batches, products, warehouses] = await Promise.all([
-    db.inventoryBatch.findMany({
+    tdb.inventoryBatch.findMany({
       include: {
         product: { select: { name: true, sku: true } },
         warehouse: { select: { name: true, code: true } },
       },
       orderBy: [{ quantity: "asc" }, { expiryDate: "asc" }],
     }),
-    db.product.findMany({
+    tdb.product.findMany({
       where: { isActive: true },
       select: { id: true, name: true, sku: true },
       orderBy: { name: "asc" },
     }),
-    db.warehouse.findMany({
+    tdb.warehouse.findMany({
       where: { isActive: true },
       select: { id: true, name: true, code: true },
     }),
@@ -144,7 +148,7 @@ export default async function AdminInventoryPage() {
                 <TableCell>
                   {batch.warehouse.name} ({batch.warehouse.code})
                 </TableCell>
-                <TableCell>{batch.batchNumber || "—"}</TableCell>
+                <TableCell>{batch.batchNumber || "\u2014"}</TableCell>
                 <TableCell>
                   <Badge
                     variant={
@@ -164,7 +168,7 @@ export default async function AdminInventoryPage() {
                       {batch.expiryDate.toLocaleDateString()}
                     </span>
                   ) : (
-                    "—"
+                    "\u2014"
                   )}
                 </TableCell>
               </TableRow>

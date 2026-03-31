@@ -1,7 +1,7 @@
 export const dynamic = "force-dynamic";
 
 import { notFound } from "next/navigation";
-import { db } from "@/lib/db";
+import { getScopedDb } from "@/lib/db";
 import { updateProduct } from "@/actions/inventory";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -13,7 +13,8 @@ interface Props {
 }
 
 async function getProduct(id: string) {
-  return db.product.findUnique({ where: { id } });
+  const tdb = await getScopedDb();
+  return tdb.product.findFirst({ where: { id } });
 }
 
 export default async function EditProductPage({ params }: Props) {

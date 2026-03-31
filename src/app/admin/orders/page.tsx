@@ -1,6 +1,7 @@
 export const dynamic = "force-dynamic";
 
-import { db } from "@/lib/db";
+import { getScopedDb } from "@/lib/db";
+import { requireAdmin } from "@/lib/auth";
 import { updateOrderStatus } from "@/actions/orders";
 import { formatPrice } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
@@ -29,9 +30,11 @@ const nextStatus: Record<string, UpdatableStatus> = {
 };
 
 export default async function AdminOrdersPage() {
-  const orders = await db.order.findMany({
+  await requireAdmin();
+  const tdb = await getScopedDb();
+
+  const orders = await tdb.order.findMany({
     include: {
-      user: { select: { firstName: true, lastName: true, email: true } },
       address: { select: { city: true, state: true } },
       warehouse: { select: { name: true } },
       items: { select: { id: true } },
@@ -47,7 +50,6 @@ export default async function AdminOrdersPage() {
         <TableHeader>
           <TableRow>
             <TableHead>Order</TableHead>
-            <TableHead>Customer</TableHead>
             <TableHead>Items</TableHead>
             <TableHead>Total</TableHead>
             <TableHead>Weight</TableHead>
@@ -68,12 +70,6 @@ export default async function AdminOrdersPage() {
                     {order.createdAt.toLocaleDateString()}
                   </p>
                 </TableCell>
-                <TableCell>
-                  <p className="text-sm">
-                    {order.user.firstName} {order.user.lastName}
-                  </p>
-                  <p className="text-xs text-gray-500">{order.user.email}</p>
-                </TableCell>
                 <TableCell>{order.items.length}</TableCell>
                 <TableCell>{formatPrice(Number(order.total))}</TableCell>
                 <TableCell>{Number(order.totalWeightKg).toFixed(1)}kg</TableCell>
@@ -86,7 +82,7 @@ export default async function AdminOrdersPage() {
                   </p>
                 </TableCell>
                 <TableCell>
-                  {order.warehouse?.name || "—"}
+                  {order.warehouse?.name || "\u2014"}
                 </TableCell>
                 <TableCell>
                   <Badge variant={statusVariant[order.status] ?? "secondary"}>

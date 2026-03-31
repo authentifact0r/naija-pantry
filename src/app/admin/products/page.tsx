@@ -1,7 +1,8 @@
 export const dynamic = "force-dynamic";
 
 import Link from "next/link";
-import { db } from "@/lib/db";
+import { getScopedDb } from "@/lib/db";
+import { requireAdmin } from "@/lib/auth";
 import { formatPrice } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -9,7 +10,10 @@ import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@
 import { Plus, Edit } from "lucide-react";
 
 export default async function AdminProductsPage() {
-  const products = await db.product.findMany({
+  await requireAdmin();
+  const tdb = await getScopedDb();
+
+  const products = await tdb.product.findMany({
     include: {
       inventoryBatches: { select: { quantity: true } },
     },

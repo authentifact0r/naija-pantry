@@ -1,4 +1,5 @@
 import { getCurrentUser } from "@/lib/auth";
+import { getScopedDb } from "@/lib/db";
 import { db } from "@/lib/db";
 import { redirect } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -8,14 +9,16 @@ export default async function AccountPage() {
   const user = await getCurrentUser();
   if (!user) redirect("/login");
 
+  const tdb = await getScopedDb();
+
   const [orderCount, addressCount, subscriptionCount, recentOrders] =
     await Promise.all([
-      db.order.count({ where: { userId: user.id } }),
+      tdb.order.count({ where: { userId: user.id } }),
       db.address.count({ where: { userId: user.id } }),
-      db.subscription.count({
+      tdb.subscription.count({
         where: { userId: user.id, status: "ACTIVE" },
       }),
-      db.order.findMany({
+      tdb.order.findMany({
         where: { userId: user.id },
         orderBy: { createdAt: "desc" },
         take: 3,

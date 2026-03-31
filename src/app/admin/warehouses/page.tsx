@@ -1,6 +1,6 @@
 export const dynamic = "force-dynamic";
 
-import { db } from "@/lib/db";
+import { getScopedDb } from "@/lib/db";
 import { revalidatePath } from "next/cache";
 import { requireAdmin } from "@/lib/auth";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -12,8 +12,9 @@ import { Warehouse, MapPin, Plus } from "lucide-react";
 async function addWarehouse(formData: FormData) {
   "use server";
   await requireAdmin();
+  const tdb = await getScopedDb();
 
-  await db.warehouse.create({
+  await tdb.warehouse.create({
     data: {
       name: formData.get("name") as string,
       code: (formData.get("code") as string).toUpperCase(),
@@ -30,7 +31,10 @@ async function addWarehouse(formData: FormData) {
 }
 
 export default async function WarehousesPage() {
-  const warehouses = await db.warehouse.findMany({
+  await requireAdmin();
+  const tdb = await getScopedDb();
+
+  const warehouses = await tdb.warehouse.findMany({
     include: {
       _count: {
         select: {

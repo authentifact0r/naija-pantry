@@ -2,6 +2,7 @@
 
 import { z } from "zod";
 import { db } from "@/lib/db";
+import { getTenant } from "@/lib/tenant";
 import {
   hashPassword,
   verifyPassword,
@@ -44,15 +45,27 @@ export async function registerAction(formData: FormData): Promise<void> {
     redirect("/register?error=" + encodeURIComponent("An account with this email already exists"));
   }
 
+  const tenant = await getTenant();
+
   const passwordHash = await hashPassword(password);
   const user = await db.user.create({
     data: { email, passwordHash, firstName, lastName, phone },
   });
 
+  // Create TenantUser with CUSTOMER role
+  const tenantUser = await db.tenantUser.create({
+    data: {
+      userId: user.id,
+      tenantId: tenant.id,
+      role: "CUSTOMER",
+    },
+  });
+
   const payload: JWTPayload = {
     userId: user.id,
     email: user.email,
-    role: user.role,
+    tenantId: tenant.id,
+    tenantRole: tenantUser.role,
   };
 
   await setAuthCookies(payload);
@@ -81,10 +94,28 @@ export async function loginAction(formData: FormData): Promise<void> {
     redirect("/login?error=" + encodeURIComponent("Invalid email or password"));
   }
 
+  const tenant = await getTenant();
+
+  // Find or create TenantUser for this user + tenant
+  let tenantUser = await db.tenantUser.findUnique({
+    where: { userId_tenantId: { userId: user.id, tenantId: tenant.id } },
+  });
+
+  if (!tenantUser) {
+    tenantUser = await db.tenantUser.create({
+      data: {
+        userId: user.id,
+        tenantId: tenant.id,
+        role: "CUSTOMER",
+      },
+    });
+  }
+
   const payload: JWTPayload = {
     userId: user.id,
     email: user.email,
-    role: user.role,
+    tenantId: tenant.id,
+    tenantRole: tenantUser.role,
   };
 
   await setAuthCookies(payload);

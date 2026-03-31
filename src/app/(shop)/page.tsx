@@ -4,11 +4,13 @@ import Link from "next/link";
 import { ArrowRight, Truck, RefreshCw, Shield, Leaf } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { db } from "@/lib/db";
+import { getScopedDb } from "@/lib/db";
+import { getTenant } from "@/lib/tenant";
 import { ProductCard } from "@/components/shop/product-card";
 
 async function getFeaturedProducts() {
-  const products = await db.product.findMany({
+  const tdb = await getScopedDb();
+  const products = await tdb.product.findMany({
     where: { isActive: true },
     include: {
       inventoryBatches: { select: { quantity: true } },
@@ -41,7 +43,8 @@ async function getFeaturedProducts() {
 }
 
 async function getFlashSales() {
-  const sales = await db.flashSale.findMany({
+  const tdb = await getScopedDb();
+  const sales = await tdb.flashSale.findMany({
     where: { isActive: true, endsAt: { gte: new Date() } },
     include: {
       product: {
@@ -67,10 +70,16 @@ async function getFlashSales() {
 }
 
 export default async function HomePage() {
-  const [featured, flashSales] = await Promise.all([
+  const [featured, flashSales, tenant] = await Promise.all([
     getFeaturedProducts(),
     getFlashSales(),
+    getTenant(),
   ]);
+
+  const heroTitle = tenant.heroBannerTitle || "The taste of home,";
+  const heroSubtitle = tenant.heroBannerSubtitle ||
+    `From Garri to Egusi, Palm Oil to Suya Spice — shop over 500+ authentic products with same-day local delivery.`;
+  const tagline = tenant.tagline || "Authentic Products";
 
   return (
     <div>
@@ -78,16 +87,15 @@ export default async function HomePage() {
       <section className="bg-gradient-to-br from-emerald-900 via-emerald-800 to-emerald-900 px-4 py-20 text-white md:py-28">
         <div className="mx-auto max-w-7xl">
           <Badge variant="secondary" className="mb-4 bg-amber-500 text-white">
-            Authentic Nigerian Foods
+            {tagline}
           </Badge>
           <h1 className="max-w-3xl text-4xl font-bold leading-tight md:text-6xl">
-            The taste of home,
+            {heroTitle}
             <br />
             <span className="text-amber-400">delivered fresh.</span>
           </h1>
           <p className="mt-4 max-w-xl text-lg text-emerald-100">
-            From Garri to Egusi, Palm Oil to Suya Spice — shop over 500+
-            authentic Nigerian products with same-day local delivery.
+            {heroSubtitle}
           </p>
           <div className="mt-8 flex flex-wrap gap-3">
             <Link href="/products">
@@ -112,7 +120,7 @@ export default async function HomePage() {
       <section className="border-b bg-white px-4 py-8">
         <div className="mx-auto grid max-w-7xl gap-6 sm:grid-cols-2 lg:grid-cols-4">
           {[
-            { icon: Truck, label: "Same-day local delivery", desc: "Within Lagos metro" },
+            { icon: Truck, label: "Same-day local delivery", desc: "Within your metro area" },
             { icon: RefreshCw, label: "Subscribe & Save 5%", desc: "Auto-ship your staples" },
             { icon: Leaf, label: "Fresh & authentic", desc: "Direct from trusted suppliers" },
             { icon: Shield, label: "Secure payments", desc: "Paystack & card payments" },

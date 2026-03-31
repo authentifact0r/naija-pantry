@@ -1,4 +1,4 @@
-import { db } from "./db";
+import { db, getScopedDb } from "./db";
 import type { ShippingMethod } from "@prisma/client";
 
 // ─── WEIGHT-BASED SHIPPING TIERS ────────────────────────────
@@ -18,13 +18,19 @@ interface CartForShipping {
   items: Array<{ weightKg: number; isPerishable: boolean; quantity: number }>;
 }
 
+interface ShippingContext {
+  hubLat?: number;
+  hubLng?: number;
+  localRadiusKm?: number;
+}
+
 // Default shipping tiers (used when DB rules are not configured)
 const DEFAULT_TIERS: ShippingOption[] = [
   { method: "STANDARD", name: "Standard Shipping", cost: 1500, estimatedDays: 5, carrier: "GIG Logistics" },
   { method: "EXPRESS", name: "Express Shipping", cost: 3500, estimatedDays: 2, carrier: "GIG Logistics" },
-  { method: "LOCAL_VAN", name: "Local Van Delivery", cost: 2000, estimatedDays: 1, carrier: "NaijaPantry Van" },
+  { method: "LOCAL_VAN", name: "Local Van Delivery", cost: 2000, estimatedDays: 1, carrier: "Local Van" },
   { method: "DHL", name: "DHL Premium", cost: 8000, estimatedDays: 3, carrier: "DHL" },
-  { method: "LOCAL_FRESH", name: "Local Fresh Delivery", cost: 1000, estimatedDays: 0, carrier: "NaijaPantry Fresh" },
+  { method: "LOCAL_FRESH", name: "Local Fresh Delivery", cost: 1000, estimatedDays: 0, carrier: "Local Fresh" },
 ];
 
 // Weight surcharges (per kg over threshold)
@@ -35,12 +41,20 @@ export async function calculateShippingOptions(
   cart: CartForShipping,
   userPostcode?: string,
   userLat?: number,
-  userLng?: number
+  userLng?: number,
+  context?: ShippingContext
 ): Promise<ShippingOption[]> {
   const options: ShippingOption[] = [];
 
-  // Try DB-based rules first
-  const dbRules = await db.shippingRule.findMany({ where: { isActive: true } });
+  // Try DB-based rules first (tenant-scoped)
+  let dbRules;
+  try {
+    const tdb = await getScopedDb();
+    dbRules = await tdb.shippingRule.findMany({ where: { isActive: true } });
+  } catch {
+    // Fallback to unscoped if no tenant context (e.g. cron jobs)
+    dbRules = await db.shippingRule.findMany({ where: { isActive: true } });
+  }
 
   if (dbRules.length > 0) {
     for (const rule of dbRules) {
@@ -83,8 +97,12 @@ export async function calculateShippingOptions(
   }
 
   // Filter options based on locality
+  const hubLat = context?.hubLat ?? parseFloat(process.env.LOCAL_HUB_LAT || "6.5244");
+  const hubLng = context?.hubLng ?? parseFloat(process.env.LOCAL_HUB_LNG || "3.3792");
+  const localRadiusKm = context?.localRadiusKm ?? parseFloat(process.env.LOCAL_DELIVERY_RADIUS_KM || "15");
+
   const isLocal = userLat && userLng
-    ? isWithinLocalRadius(userLat, userLng)
+    ? isWithinRadius(userLat, userLng, hubLat, hubLng, localRadiusKm)
     : false;
 
   return options.filter((opt) => {
@@ -100,13 +118,28 @@ export async function calculateShippingOptions(
 
 // ─── LOCAL DELIVERY RADIUS ──────────────────────────────────
 
-const HUB_LAT = parseFloat(process.env.LOCAL_HUB_LAT || "6.5244");
-const HUB_LNG = parseFloat(process.env.LOCAL_HUB_LNG || "3.3792");
-const LOCAL_RADIUS_KM = parseFloat(process.env.LOCAL_DELIVERY_RADIUS_KM || "15");
+export function isWithinLocalRadius(
+  lat: number,
+  lng: number,
+  hubLat?: number,
+  hubLng?: number,
+  localRadiusKm?: number
+): boolean {
+  const hLat = hubLat ?? parseFloat(process.env.LOCAL_HUB_LAT || "6.5244");
+  const hLng = hubLng ?? parseFloat(process.env.LOCAL_HUB_LNG || "3.3792");
+  const radius = localRadiusKm ?? parseFloat(process.env.LOCAL_DELIVERY_RADIUS_KM || "15");
+  return isWithinRadius(lat, lng, hLat, hLng, radius);
+}
 
-export function isWithinLocalRadius(lat: number, lng: number): boolean {
-  const distance = haversineDistance(HUB_LAT, HUB_LNG, lat, lng);
-  return distance <= LOCAL_RADIUS_KM;
+function isWithinRadius(
+  lat: number,
+  lng: number,
+  hubLat: number,
+  hubLng: number,
+  radiusKm: number
+): boolean {
+  const distance = haversineDistance(hubLat, hubLng, lat, lng);
+  return distance <= radiusKm;
 }
 
 function haversineDistance(
@@ -133,17 +166,34 @@ export async function findClosestWarehouse(
   lng: number,
   productIds: string[]
 ) {
-  const warehouses = await db.warehouse.findMany({
-    where: { isActive: true },
-    include: {
-      inventoryBatches: {
-        where: {
-          productId: { in: productIds },
-          quantity: { gt: 0 },
+  let warehouses;
+  try {
+    const tdb = await getScopedDb();
+    warehouses = await tdb.warehouse.findMany({
+      where: { isActive: true },
+      include: {
+        inventoryBatches: {
+          where: {
+            productId: { in: productIds },
+            quantity: { gt: 0 },
+          },
         },
       },
-    },
-  });
+    });
+  } catch {
+    // Fallback to unscoped if no tenant context
+    warehouses = await db.warehouse.findMany({
+      where: { isActive: true },
+      include: {
+        inventoryBatches: {
+          where: {
+            productId: { in: productIds },
+            quantity: { gt: 0 },
+          },
+        },
+      },
+    });
+  }
 
   // Score warehouses: distance + stock availability
   const scored = warehouses

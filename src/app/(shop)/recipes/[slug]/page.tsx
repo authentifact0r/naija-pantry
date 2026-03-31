@@ -4,7 +4,7 @@ import { notFound } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
 import { Clock, Users, ShoppingBasket } from "lucide-react";
-import { db } from "@/lib/db";
+import { getScopedDb } from "@/lib/db";
 import { formatPrice, getStockStatus } from "@/lib/utils";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -15,7 +15,8 @@ interface Props {
 }
 
 async function getRecipe(slug: string) {
-  const recipe = await db.recipe.findUnique({
+  const tdb = await getScopedDb();
+  const recipe = await tdb.recipe.findFirst({
     where: { slug },
     include: {
       items: {

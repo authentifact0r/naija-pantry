@@ -1,5 +1,6 @@
 "use server";
 
+import { getScopedDb } from "@/lib/db";
 import { db } from "@/lib/db";
 import { requireAuth } from "@/lib/auth";
 import { revalidatePath } from "next/cache";
@@ -11,6 +12,7 @@ export async function createSubscription(
   quantity: number = 1
 ) {
   const user = await requireAuth();
+  const tdb = await getScopedDb();
 
   // Calculate next delivery date based on interval
   const now = new Date();
@@ -27,8 +29,9 @@ export async function createSubscription(
       break;
   }
 
-  const subscription = await db.subscription.create({
+  const subscription = await tdb.subscription.create({
     data: {
+      tenantId: "", // injected by scoped client
       userId: user.id,
       productId,
       quantity,
@@ -44,8 +47,9 @@ export async function createSubscription(
 
 export async function pauseSubscription(subscriptionId: string): Promise<void> {
   const user = await requireAuth();
+  const tdb = await getScopedDb();
 
-  await db.subscription.update({
+  await tdb.subscription.update({
     where: { id: subscriptionId, userId: user.id },
     data: { status: "PAUSED" },
   });
@@ -55,12 +59,13 @@ export async function pauseSubscription(subscriptionId: string): Promise<void> {
 
 export async function resumeSubscription(subscriptionId: string): Promise<void> {
   const user = await requireAuth();
+  const tdb = await getScopedDb();
 
   const now = new Date();
   const nextDelivery = new Date(now);
   nextDelivery.setDate(now.getDate() + 7);
 
-  await db.subscription.update({
+  await tdb.subscription.update({
     where: { id: subscriptionId, userId: user.id },
     data: { status: "ACTIVE", nextDelivery },
   });
@@ -70,8 +75,9 @@ export async function resumeSubscription(subscriptionId: string): Promise<void> 
 
 export async function cancelSubscription(subscriptionId: string): Promise<void> {
   const user = await requireAuth();
+  const tdb = await getScopedDb();
 
-  await db.subscription.update({
+  await tdb.subscription.update({
     where: { id: subscriptionId, userId: user.id },
     data: { status: "CANCELLED" },
   });
@@ -81,6 +87,7 @@ export async function cancelSubscription(subscriptionId: string): Promise<void> 
 
 // Called by cron/scheduled job to process due subscriptions
 export async function processDueSubscriptions() {
+  // This runs across all tenants, so we use the base db
   const dueSubscriptions = await db.subscription.findMany({
     where: {
       status: "ACTIVE",
@@ -103,9 +110,10 @@ export async function processDueSubscriptions() {
     const discountedPrice = unitPrice * discountMultiplier;
     const total = discountedPrice * sub.quantity;
 
-    // Create auto-ship order
+    // Create auto-ship order (use base db with explicit tenantId)
     const order = await db.order.create({
       data: {
+        tenantId: sub.tenantId,
         orderNumber: `SUB-${Date.now().toString(36).toUpperCase()}`,
         userId: sub.userId,
         addressId: address.id,

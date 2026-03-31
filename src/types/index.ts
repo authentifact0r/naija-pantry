@@ -10,6 +10,8 @@ import type {
   Recipe,
   RecipeItem,
   FlashSale,
+  Tenant,
+  TenantUser,
 } from "@prisma/client";
 
 // Extended types with relations
@@ -51,8 +53,11 @@ export interface GuestCartItem {
 // Auth
 export type SafeUser = Pick<
   User,
-  "id" | "email" | "firstName" | "lastName" | "phone" | "role"
->;
+  "id" | "email" | "firstName" | "lastName" | "phone"
+> & {
+  tenantId: string;
+  tenantRole: string;
+};
 
 // Shipping
 export interface ShippingOption {

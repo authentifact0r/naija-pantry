@@ -67,7 +67,7 @@ export function tenantDb(tenantId: string) {
         },
         async create({ model, args, query }) {
           if (isTenantScoped(model)) {
-            args.data = { ...args.data, tenantId };
+            (args.data as Record<string, unknown>).tenantId = tenantId;
           }
           return query(args);
         },
@@ -76,7 +76,7 @@ export function tenantDb(tenantId: string) {
             if (Array.isArray(args.data)) {
               args.data = args.data.map((d: Record<string, unknown>) => ({ ...d, tenantId }));
             } else {
-              args.data = { ...args.data, tenantId };
+              (args.data as Record<string, unknown>).tenantId = tenantId;
             }
           }
           return query(args);
@@ -108,7 +108,7 @@ export function tenantDb(tenantId: string) {
         async upsert({ model, args, query }) {
           if (isTenantScoped(model)) {
             args.where = { ...args.where, tenantId } as typeof args.where;
-            args.create = { ...args.create, tenantId };
+            (args.create as Record<string, unknown>).tenantId = tenantId;
           }
           return query(args);
         },

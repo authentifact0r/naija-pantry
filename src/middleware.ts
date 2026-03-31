@@ -1,5 +1,20 @@
 import { NextResponse, type NextRequest } from "next/server";
 
+function resolveTenantSlug(request: NextRequest): string {
+  // Dev override
+  const paramSlug = request.nextUrl.searchParams.get("tenant");
+  if (paramSlug) return paramSlug;
+
+  const host = request.headers.get("host") ?? "";
+
+  // Extract subdomain (e.g., "naijapantry" from "naijapantry.platform.com")
+  const parts = host.split(".");
+  if (parts.length >= 3) return parts[0];
+
+  // Default tenant for localhost / single-domain setup
+  return "naijapantry";
+}
+
 const protectedPrefixes = ["/account", "/admin"];
 
 const publicPaths = [
@@ -8,35 +23,54 @@ const publicPaths = [
   "/register",
   "/_next",
   "/favicon.ico",
+  "/images",
 ];
 
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
+  // Resolve tenant slug and inject into request headers
+  const tenantSlug = resolveTenantSlug(request);
+  const requestHeaders = new Headers(request.headers);
+  requestHeaders.set("x-tenant-slug", tenantSlug);
+
   // Allow public paths, static assets, and API webhooks
   if (publicPaths.some((path) => pathname.startsWith(path))) {
-    return NextResponse.next();
+    return NextResponse.next({
+      request: { headers: requestHeaders },
+    });
   }
 
-  // Only protect /account/* and /admin/* routes
+  // Protect /superadmin/* routes
+  if (pathname.startsWith("/superadmin")) {
+    const token = request.cookies.get("access_token")?.value;
+    if (!token) {
+      const loginUrl = new URL("/login", request.url);
+      loginUrl.searchParams.set("redirect", pathname);
+      return NextResponse.redirect(loginUrl);
+    }
+    return NextResponse.next({
+      request: { headers: requestHeaders },
+    });
+  }
+
+  // Protect /account/* and /admin/* routes
   const isProtected = protectedPrefixes.some((prefix) =>
     pathname.startsWith(prefix)
   );
 
-  if (!isProtected) {
-    return NextResponse.next();
+  if (isProtected) {
+    const token = request.cookies.get("access_token")?.value;
+    if (!token) {
+      const loginUrl = new URL("/login", request.url);
+      loginUrl.searchParams.set("redirect", pathname);
+      return NextResponse.redirect(loginUrl);
+    }
   }
 
-  // Simple cookie check — JWT verification happens server-side
-  const token = request.cookies.get("access_token")?.value;
-
-  if (!token) {
-    const loginUrl = new URL("/login", request.url);
-    loginUrl.searchParams.set("redirect", pathname);
-    return NextResponse.redirect(loginUrl);
-  }
-
-  return NextResponse.next();
+  return NextResponse.next({
+    request: { headers: requestHeaders },
+  });
 }
 
 export const config = {

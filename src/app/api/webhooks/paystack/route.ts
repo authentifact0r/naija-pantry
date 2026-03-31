@@ -1,21 +1,35 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import { verifyWebhookSignature } from "@/lib/paystack";
+import { createPaystackClient } from "@/lib/paystack";
 
 export async function POST(req: NextRequest) {
   const body = await req.text();
   const signature = req.headers.get("x-paystack-signature");
 
-  if (!signature || !verifyWebhookSignature(body, signature)) {
+  // Parse event first to resolve tenant from the payment reference
+  const event = JSON.parse(body);
+  const reference = event.data?.reference as string | undefined;
+
+  if (!reference) {
+    return NextResponse.json({ error: "No reference" }, { status: 400 });
+  }
+
+  // Find order to determine the tenant for signature verification
+  const order = await db.order.findFirst({
+    where: { orderNumber: reference },
+    include: { tenant: { select: { paystackSecretKey: true } } },
+  });
+
+  // Use tenant-specific key or fallback to env
+  const paystackKey = order?.tenant?.paystackSecretKey || process.env.PAYSTACK_SECRET_KEY!;
+  const paystack = createPaystackClient(paystackKey);
+
+  if (!signature || !paystack.verifyWebhookSignature(body, signature)) {
     return NextResponse.json({ error: "Invalid signature" }, { status: 401 });
   }
 
-  const event = JSON.parse(body);
-
   switch (event.event) {
     case "charge.success": {
-      const { reference } = event.data;
-
       // Update order payment status
       await db.order.updateMany({
         where: { orderNumber: reference },
@@ -29,8 +43,6 @@ export async function POST(req: NextRequest) {
     }
 
     case "charge.failed": {
-      const { reference } = event.data;
-
       await db.order.updateMany({
         where: { orderNumber: reference },
         data: {

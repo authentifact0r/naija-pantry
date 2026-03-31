@@ -1,11 +1,12 @@
 export const dynamic = "force-dynamic";
 
-import { db } from "@/lib/db";
+import { getScopedDb } from "@/lib/db";
 import { RecipeCard } from "@/components/shop/recipe-card";
 import type { RecipeWithItems } from "@/types";
 
 async function getRecipes(): Promise<RecipeWithItems[]> {
-  return db.recipe.findMany({
+  const tdb = await getScopedDb();
+  return tdb.recipe.findMany({
     include: {
       items: {
         include: { product: true },

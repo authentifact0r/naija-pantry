@@ -1,6 +1,7 @@
 export const dynamic = "force-dynamic";
 
-import { db } from "@/lib/db";
+import { getScopedDb } from "@/lib/db";
+import { requireAdmin } from "@/lib/auth";
 import { createFlashSale } from "@/actions/inventory";
 import { formatPrice } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
@@ -12,16 +13,19 @@ import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@
 import { Zap } from "lucide-react";
 
 export default async function FlashSalesPage() {
+  await requireAdmin();
+  const tdb = await getScopedDb();
+
   const now = new Date();
   const thirtyDays = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
 
   const [flashSales, expiringProducts] = await Promise.all([
-    db.flashSale.findMany({
+    tdb.flashSale.findMany({
       include: { product: { select: { name: true, price: true, sku: true } } },
       orderBy: { createdAt: "desc" },
     }),
     // Products with batches expiring in 30 days — candidates for flash sales
-    db.product.findMany({
+    tdb.product.findMany({
       where: {
         isActive: true,
         inventoryBatches: {
@@ -99,7 +103,7 @@ export default async function FlashSalesPage() {
                 <Badge variant="destructive">{Number(sale.discountPercent)}% OFF</Badge>
               </TableCell>
               <TableCell className="text-sm text-gray-500">
-                {sale.reason || "—"}
+                {sale.reason || "\u2014"}
               </TableCell>
               <TableCell className="text-sm">
                 {sale.endsAt.toLocaleDateString()}

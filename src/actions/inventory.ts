@@ -1,6 +1,6 @@
 "use server";
 
-import { db } from "@/lib/db";
+import { getScopedDb } from "@/lib/db";
 import { requireAdmin } from "@/lib/auth";
 import { slugify } from "@/lib/utils";
 import { revalidatePath } from "next/cache";
@@ -23,6 +23,7 @@ const productSchema = z.object({
 
 export async function createProduct(formData: FormData): Promise<void> {
   await requireAdmin();
+  const tdb = await getScopedDb();
 
   const parsed = productSchema.safeParse({
     name: formData.get("name"),
@@ -45,9 +46,10 @@ export async function createProduct(formData: FormData): Promise<void> {
   const { tags, ...data } = parsed.data;
   const slug = slugify(data.name);
 
-  await db.product.create({
+  await tdb.product.create({
     data: {
       ...data,
+      tenantId: "", // injected by scoped client
       slug,
       tags: tags ? tags.split(",").map((t) => t.trim().toLowerCase()) : [],
       images: [],
@@ -61,6 +63,7 @@ export async function createProduct(formData: FormData): Promise<void> {
 
 export async function updateProduct(productId: string, formData: FormData): Promise<void> {
   await requireAdmin();
+  const tdb = await getScopedDb();
 
   const parsed = productSchema.safeParse({
     name: formData.get("name"),
@@ -82,7 +85,7 @@ export async function updateProduct(productId: string, formData: FormData): Prom
 
   const { tags, ...data } = parsed.data;
 
-  await db.product.update({
+  await tdb.product.update({
     where: { id: productId },
     data: {
       ...data,
@@ -100,8 +103,9 @@ export async function batchUpdatePrices(
   adjustmentPercent: number
 ) {
   await requireAdmin();
+  const tdb = await getScopedDb();
 
-  const products = await db.product.findMany({
+  const products = await tdb.product.findMany({
     where: { id: { in: productIds } },
   });
 
@@ -109,7 +113,7 @@ export async function batchUpdatePrices(
 
   for (const product of products) {
     const newPrice = Number(product.price) * multiplier;
-    await db.product.update({
+    await tdb.product.update({
       where: { id: product.id },
       data: { price: Math.round(newPrice * 100) / 100 },
     });
@@ -122,6 +126,7 @@ export async function batchUpdatePrices(
 
 export async function addInventoryBatch(formData: FormData): Promise<void> {
   await requireAdmin();
+  const tdb = await getScopedDb();
 
   const productId = formData.get("productId") as string;
   const warehouseId = formData.get("warehouseId") as string;
@@ -134,8 +139,9 @@ export async function addInventoryBatch(formData: FormData): Promise<void> {
     ? parseFloat(formData.get("costPrice") as string)
     : undefined;
 
-  await db.inventoryBatch.create({
+  await tdb.inventoryBatch.create({
     data: {
+      tenantId: "", // injected by scoped client
       productId,
       warehouseId,
       quantity,
@@ -150,16 +156,18 @@ export async function addInventoryBatch(formData: FormData): Promise<void> {
 
 export async function createFlashSale(formData: FormData): Promise<void> {
   await requireAdmin();
+  const tdb = await getScopedDb();
 
   const productId = formData.get("productId") as string;
   const discountPercent = parseFloat(formData.get("discountPercent") as string);
   const reason = (formData.get("reason") as string) || undefined;
   const endsAt = new Date(formData.get("endsAt") as string);
 
-  await db.flashSale.upsert({
+  await tdb.flashSale.upsert({
     where: { productId },
     update: { discountPercent, reason, endsAt, isActive: true, startsAt: new Date() },
     create: {
+      tenantId: "", // injected by scoped client
       productId,
       discountPercent,
       reason,

@@ -74,6 +74,6 @@ export const useCart = create<CartStore>()(
           0
         ),
     }),
-    { name: "naija-pantry-cart" }
+    { name: "authentifactor-cart" }
   )
 );

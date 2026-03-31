@@ -8,22 +8,26 @@ async function main() {
 
   // ── Tenants ────────────────────────────────────────────────
 
-  const naijapantry = await db.tenant.create({
+  const tom = await db.tenant.create({
     data: {
-      name: "NaijaPantry",
-      slug: "naijapantry",
+      name: "Taste of Motherland",
+      slug: "taste-of-motherland",
+      customDomain: "tmfoods.co.uk",
       primaryColor: "#064E3B",
       accentColor: "#F59E0B",
-      tagline: "Authentic Nigerian Foods Delivered Fresh",
-      currency: "NGN",
-      localHubLat: 6.5244,
-      localHubLng: 3.3792,
-      localRadiusKm: 15,
-      defaultMetaTitle: "NaijaPantry — Authentic Nigerian Foods",
+      tagline: "Authentic African Foods Delivered to Your Door",
+      currency: "GBP",
+      localHubLat: 51.5074,
+      localHubLng: -0.1278,
+      localRadiusKm: 25,
+      freeShippingMinimum: 35,
+      defaultMetaTitle: "Taste of Motherland — Authentic African Foods",
       defaultMetaDescription:
-        "Shop 500+ authentic Nigerian groceries, spices, drinks and beauty products with same-day delivery.",
+        "Shop 500+ authentic African groceries, spices, drinks and beauty products delivered across the UK.",
       heroBannerTitle: "The taste of home, delivered fresh.",
-      heroBannerSubtitle: "From Garri to Egusi, Palm Oil to Suya Spice",
+      heroBannerSubtitle: "From Garri to Egusi, Palm Oil to Suya Spice — authentic African foods at your doorstep",
+      mobileAppEnabled: true,
+      mobileAppBrandName: "Taste of Motherland",
     },
   });
 
@@ -31,7 +35,6 @@ async function main() {
     data: {
       name: "Toks Mimi Foods",
       slug: "toks-mimi",
-      customDomain: "tmfoods.co.uk",
       primaryColor: "#7C3AED",
       accentColor: "#EC4899",
       tagline: "Premium African Cuisine, Delivered to Your Door",
@@ -67,7 +70,7 @@ async function main() {
   // Super admin on both tenants
   await db.tenantUser.createMany({
     data: [
-      { userId: superAdmin.id, tenantId: naijapantry.id, role: "ADMIN" },
+      { userId: superAdmin.id, tenantId: tom.id, role: "ADMIN" as const },
       { userId: superAdmin.id, tenantId: toksmimi.id, role: "ADMIN" },
     ],
   });
@@ -100,7 +103,7 @@ async function main() {
   });
 
   await db.tenantUser.create({
-    data: { userId: chioma.id, tenantId: naijapantry.id, role: "CUSTOMER" },
+    data: { userId: chioma.id, tenantId: tom.id, role: "CUSTOMER" },
   });
 
   const toks = await db.user.create({
@@ -134,11 +137,11 @@ async function main() {
     data: { userId: toks.id, tenantId: toksmimi.id, role: "CUSTOMER" },
   });
 
-  // ── NaijaPantry Warehouses ─────────────────────────────────
+  // ── Taste of Motherland Warehouses ─────────────────────────────────
 
   const lagosWarehouse = await db.warehouse.create({
     data: {
-      tenantId: naijapantry.id,
+      tenantId: tom.id,
       name: "Lagos Central",
       code: "LOS",
       address: "12 Warehouse Road, Apapa",
@@ -152,7 +155,7 @@ async function main() {
 
   const abujaWarehouse = await db.warehouse.create({
     data: {
-      tenantId: naijapantry.id,
+      tenantId: tom.id,
       name: "Abuja Hub",
       code: "ABJ",
       address: "Plot 45 Industrial Layout, Gwagwalada",
@@ -166,7 +169,7 @@ async function main() {
 
   const londonWarehouseNP = await db.warehouse.create({
     data: {
-      tenantId: naijapantry.id,
+      tenantId: tom.id,
       name: "London Depot",
       code: "LON",
       address: "Unit 7, Meridian Trading Estate",
@@ -178,20 +181,20 @@ async function main() {
     },
   });
 
-  // ── NaijaPantry Products (16) ──────────────────────────────
+  // ── Taste of Motherland Products (16) ──────────────────────────────
 
   const npProducts = await Promise.all([
     // 0: Garri
     db.product.create({
       data: {
-        tenantId: naijapantry.id,
+        tenantId: tom.id,
         sku: "GRO-GAR-001",
         name: "Premium White Garri",
         slug: "premium-white-garri",
         description:
           "Fine-grain white garri, perfect for eba and drinking garri. Sourced from Ogun State cassava farms.",
         category: "GROCERIES",
-        price: 2500,
+        price: 5.99,
         weightKg: 2.0,
         isPerishable: false,
         isSubscribable: true,
@@ -202,14 +205,14 @@ async function main() {
     // 1: Ofada Rice
     db.product.create({
       data: {
-        tenantId: naijapantry.id,
+        tenantId: tom.id,
         sku: "GRO-RIC-001",
         name: "Ofada Rice (Local) 5kg",
         slug: "ofada-rice-5kg",
         description:
           "Authentic Ofada rice from Ogun State. Unpolished, aromatic, and perfect with Ofada stew.",
         category: "GROCERIES",
-        price: 8500,
+        price: 12.99,
         weightKg: 5.0,
         isPerishable: false,
         isSubscribable: true,
@@ -220,14 +223,14 @@ async function main() {
     // 2: Honey Beans
     db.product.create({
       data: {
-        tenantId: naijapantry.id,
+        tenantId: tom.id,
         sku: "GRO-BEA-001",
         name: "Honey Beans (Oloyin) 2kg",
         slug: "honey-beans-2kg",
         description:
           "Sweet Nigerian honey beans. Cook faster than regular beans. Great for porridge or moi-moi.",
         category: "GROCERIES",
-        price: 3200,
+        price: 7.49,
         weightKg: 2.0,
         isPerishable: false,
         isSubscribable: true,
@@ -238,14 +241,14 @@ async function main() {
     // 3: Pounded Yam
     db.product.create({
       data: {
-        tenantId: naijapantry.id,
+        tenantId: tom.id,
         sku: "GRO-YAM-001",
         name: "Fresh Pounded Yam Flour 1kg",
         slug: "pounded-yam-flour-1kg",
         description:
           "Instant pounded yam flour (Poundo Iyan). Just add hot water for smooth, stretchy pounded yam.",
         category: "GROCERIES",
-        price: 1800,
+        price: 4.49,
         weightKg: 1.0,
         isPerishable: false,
         isSubscribable: true,
@@ -256,14 +259,14 @@ async function main() {
     // 4: Egusi
     db.product.create({
       data: {
-        tenantId: naijapantry.id,
+        tenantId: tom.id,
         sku: "GRO-EGU-001",
         name: "Ground Egusi (Melon Seeds) 500g",
         slug: "ground-egusi-500g",
         description:
           "Freshly ground egusi seeds for making delicious Egusi soup. Rich and nutty flavor.",
         category: "GROCERIES",
-        price: 3500,
+        price: 8.99,
         weightKg: 0.5,
         isPerishable: false,
         isSubscribable: true,
@@ -274,14 +277,14 @@ async function main() {
     // 5: Palm Oil
     db.product.create({
       data: {
-        tenantId: naijapantry.id,
+        tenantId: tom.id,
         sku: "GRO-PLO-001",
         name: "Devon King's Palm Oil 2L",
         slug: "palm-oil-2l",
         description:
           "Pure, natural palm oil. Essential for Nigerian soups and stews. No additives.",
         category: "GROCERIES",
-        price: 4500,
+        price: 9.99,
         weightKg: 2.2,
         isPerishable: false,
         isFragile: true,
@@ -292,14 +295,14 @@ async function main() {
     // 6: Indomie
     db.product.create({
       data: {
-        tenantId: naijapantry.id,
+        tenantId: tom.id,
         sku: "GRO-IND-001",
         name: "Indomie Instant Noodles (Box of 40)",
         slug: "indomie-box-40",
         description:
           "Nigeria's favorite instant noodles. Chicken flavor. Box of 40 packs.",
         category: "GROCERIES",
-        price: 12000,
+        price: 24.99,
         weightKg: 3.0,
         isPerishable: false,
         isSubscribable: true,
@@ -310,14 +313,14 @@ async function main() {
     // 7: Catfish
     db.product.create({
       data: {
-        tenantId: naijapantry.id,
+        tenantId: tom.id,
         sku: "GRO-FRZ-001",
         name: "Fresh Frozen Catfish 1kg",
         slug: "frozen-catfish-1kg",
         description:
           "Farm-raised catfish, cleaned and frozen. Perfect for pepper soup or grilling.",
         category: "GROCERIES",
-        price: 5500,
+        price: 11.99,
         weightKg: 1.0,
         isPerishable: true,
         tags: ["fish", "protein", "frozen"],
@@ -327,14 +330,14 @@ async function main() {
     // 8: Suya Spice
     db.product.create({
       data: {
-        tenantId: naijapantry.id,
+        tenantId: tom.id,
         sku: "SPI-SUY-001",
         name: "Yaji Suya Spice 200g",
         slug: "yaji-suya-spice-200g",
         description:
           "Authentic suya spice blend with ground peanuts, cayenne, and traditional spices. The real thing.",
         category: "SPICES",
-        price: 1500,
+        price: 3.99,
         weightKg: 0.2,
         isPerishable: false,
         tags: ["spice", "suya", "bbq", "nigerian"],
@@ -344,14 +347,14 @@ async function main() {
     // 9: Ogiri
     db.product.create({
       data: {
-        tenantId: naijapantry.id,
+        tenantId: tom.id,
         sku: "SPI-OGI-001",
         name: "Ogiri Locust Beans 100g",
         slug: "ogiri-locust-beans-100g",
         description:
           "Traditional fermented locust bean seasoning. Adds deep umami flavor to soups.",
         category: "SPICES",
-        price: 800,
+        price: 2.49,
         weightKg: 0.1,
         isPerishable: true,
         tags: ["seasoning", "fermented", "traditional"],
@@ -361,14 +364,14 @@ async function main() {
     // 10: Cameroon Pepper
     db.product.create({
       data: {
-        tenantId: naijapantry.id,
+        tenantId: tom.id,
         sku: "SPI-CAM-001",
         name: "Cameroon Pepper (Ground) 150g",
         slug: "cameroon-pepper-150g",
         description:
           "Fiery Cameroon pepper, finely ground. Adds serious heat to any dish. Use sparingly!",
         category: "SPICES",
-        price: 1200,
+        price: 3.49,
         weightKg: 0.15,
         isPerishable: false,
         tags: ["pepper", "hot", "spicy"],
@@ -378,14 +381,14 @@ async function main() {
     // 11: Crayfish
     db.product.create({
       data: {
-        tenantId: naijapantry.id,
+        tenantId: tom.id,
         sku: "SPI-CRA-001",
         name: "Crayfish (Ground) 200g",
         slug: "ground-crayfish-200g",
         description:
           "Dried and ground crayfish. Essential for Egusi, Okra soup, and most Nigerian soups.",
         category: "SPICES",
-        price: 2000,
+        price: 4.99,
         weightKg: 0.2,
         isPerishable: false,
         tags: ["seafood", "seasoning", "essential"],
@@ -395,14 +398,14 @@ async function main() {
     // 12: Maltina
     db.product.create({
       data: {
-        tenantId: naijapantry.id,
+        tenantId: tom.id,
         sku: "DRK-MLT-001",
         name: "Maltina Malt Drink (6-Pack)",
         slug: "maltina-6-pack",
         description:
           "Classic Nigerian malt drink. Rich, sweet, and refreshing. Pack of 6 bottles.",
         category: "DRINKS",
-        price: 3000,
+        price: 6.99,
         weightKg: 2.1,
         isPerishable: false,
         isFragile: true,
@@ -413,14 +416,14 @@ async function main() {
     // 13: Zobo
     db.product.create({
       data: {
-        tenantId: naijapantry.id,
+        tenantId: tom.id,
         sku: "DRK-ZOB-001",
         name: "Zobo Drink Mix 500g",
         slug: "zobo-drink-mix-500g",
         description:
           "Dried hibiscus flowers for making traditional Zobo drink. Just boil, spice, and chill.",
         category: "DRINKS",
-        price: 1500,
+        price: 3.99,
         weightKg: 0.5,
         isPerishable: false,
         isSubscribable: true,
@@ -431,14 +434,14 @@ async function main() {
     // 14: Shea Butter
     db.product.create({
       data: {
-        tenantId: naijapantry.id,
+        tenantId: tom.id,
         sku: "BTY-SHE-001",
         name: "Raw Shea Butter 500g",
         slug: "raw-shea-butter-500g",
         description:
           "Unrefined raw shea butter from Northern Nigeria. For skin, hair, and body moisturizing.",
         category: "BEAUTY",
-        price: 2500,
+        price: 6.49,
         weightKg: 0.5,
         isPerishable: false,
         tags: ["skincare", "natural", "moisturizer"],
@@ -448,14 +451,14 @@ async function main() {
     // 15: Dudu Osun
     db.product.create({
       data: {
-        tenantId: naijapantry.id,
+        tenantId: tom.id,
         sku: "BTY-BLS-001",
         name: "African Black Soap (Dudu Osun) 150g",
         slug: "dudu-osun-black-soap",
         description:
           "Traditional Dudu Osun black soap. Handmade with shea butter, honey, and cam wood.",
         category: "BEAUTY",
-        price: 800,
+        price: 2.49,
         weightKg: 0.15,
         isPerishable: false,
         tags: ["soap", "natural", "skincare"],
@@ -464,7 +467,7 @@ async function main() {
     }),
   ]);
 
-  // ── NaijaPantry Inventory Batches ──────────────────────────
+  // ── Taste of Motherland Inventory Batches ──────────────────────────
 
   const now = new Date();
   const npInventoryData = npProducts.flatMap((product) => {
@@ -477,7 +480,7 @@ async function main() {
 
     return [
       {
-        tenantId: naijapantry.id,
+        tenantId: tom.id,
         productId: product.id,
         warehouseId: lagosWarehouse.id,
         quantity: Math.floor(Math.random() * 100) + 20,
@@ -485,7 +488,7 @@ async function main() {
         expiryDate,
       },
       {
-        tenantId: naijapantry.id,
+        tenantId: tom.id,
         productId: product.id,
         warehouseId: abujaWarehouse.id,
         quantity: Math.floor(Math.random() * 50) + 5,
@@ -493,7 +496,7 @@ async function main() {
         expiryDate,
       },
       {
-        tenantId: naijapantry.id,
+        tenantId: tom.id,
         productId: product.id,
         warehouseId: londonWarehouseNP.id,
         quantity: Math.floor(Math.random() * 30) + 2,
@@ -505,11 +508,11 @@ async function main() {
 
   await db.inventoryBatch.createMany({ data: npInventoryData });
 
-  // ── NaijaPantry Recipes ────────────────────────────────────
+  // ── Taste of Motherland Recipes ────────────────────────────────────
 
   await db.recipe.create({
     data: {
-      tenantId: naijapantry.id,
+      tenantId: tom.id,
       title: "Classic Jollof Rice",
       slug: "classic-jollof-rice",
       description:
@@ -548,7 +551,7 @@ async function main() {
 
   await db.recipe.create({
     data: {
-      tenantId: naijapantry.id,
+      tenantId: tom.id,
       title: "Egusi Soup with Spinach",
       slug: "egusi-soup-spinach",
       description:
@@ -585,99 +588,81 @@ async function main() {
     },
   });
 
-  // ── NaijaPantry Shipping Rules ─────────────────────────────
+  // ── Taste of Motherland Shipping Rules (GBP) ───────────────────────
 
   await db.shippingRule.createMany({
     data: [
       {
-        tenantId: naijapantry.id,
-        name: "Standard (Light)",
+        tenantId: tom.id,
+        name: "Standard UK (Light)",
         method: "STANDARD",
         minWeightKg: 0,
         maxWeightKg: 5,
-        baseCost: 1500,
+        baseCost: 3.99,
         perKgCost: 0,
         estimatedDays: 5,
       },
       {
-        tenantId: naijapantry.id,
-        name: "Standard (Medium)",
+        tenantId: tom.id,
+        name: "Standard UK (Medium)",
         method: "STANDARD",
         minWeightKg: 5,
         maxWeightKg: 15,
-        baseCost: 1500,
-        perKgCost: 200,
+        baseCost: 5.99,
+        perKgCost: 0.5,
         estimatedDays: 5,
       },
       {
-        tenantId: naijapantry.id,
-        name: "Standard (Heavy)",
+        tenantId: tom.id,
+        name: "Standard UK (Heavy)",
         method: "STANDARD",
         minWeightKg: 15,
         maxWeightKg: 50,
-        baseCost: 1500,
-        perKgCost: 350,
+        baseCost: 7.99,
+        perKgCost: 0.75,
         estimatedDays: 7,
       },
       {
-        tenantId: naijapantry.id,
-        name: "Express (Light)",
+        tenantId: tom.id,
+        name: "Express UK",
         method: "EXPRESS",
         minWeightKg: 0,
-        maxWeightKg: 10,
-        baseCost: 3500,
+        maxWeightKg: 20,
+        baseCost: 7.99,
         perKgCost: 0,
         estimatedDays: 2,
       },
       {
-        tenantId: naijapantry.id,
-        name: "Express (Heavy)",
-        method: "EXPRESS",
-        minWeightKg: 10,
-        maxWeightKg: 30,
-        baseCost: 3500,
-        perKgCost: 300,
-        estimatedDays: 3,
-      },
-      {
-        tenantId: naijapantry.id,
-        name: "Local Van",
+        tenantId: tom.id,
+        name: "Local Van Delivery",
         method: "LOCAL_VAN",
         minWeightKg: 0,
         maxWeightKg: 100,
-        baseCost: 2000,
-        perKgCost: 100,
+        baseCost: 4.99,
+        perKgCost: 0.25,
         estimatedDays: 1,
       },
       {
-        tenantId: naijapantry.id,
+        tenantId: tom.id,
         name: "Local Fresh Delivery",
         method: "LOCAL_FRESH",
         minWeightKg: 0,
         maxWeightKg: 20,
-        baseCost: 1000,
+        baseCost: 2.99,
         perKgCost: 0,
         estimatedDays: 0,
-      },
-      {
-        tenantId: naijapantry.id,
-        name: "DHL Premium",
-        method: "DHL",
-        minWeightKg: 0,
-        maxWeightKg: 30,
-        baseCost: 8000,
         perKgCost: 500,
         estimatedDays: 3,
       },
     ],
   });
 
-  // ── NaijaPantry Flash Sale ─────────────────────────────────
+  // ── Taste of Motherland Flash Sale ─────────────────────────────────
 
   const catfish = npProducts.find((p) => p.sku === "GRO-FRZ-001")!;
   await db.flashSale.create({
     data: {
-      tenantId: naijapantry.id,
+      tenantId: tom.id,
       productId: catfish.id,
       discountPercent: 25,
       reason: "Near expiry — must sell!",
@@ -717,7 +702,7 @@ async function main() {
         description:
           "Our signature jollof seasoning blend. Just add to rice with tomato paste for perfect jollof every time.",
         category: "SPICES",
-        price: 1500,
+        price: 6.99,
         weightKg: 0.25,
         isPerishable: false,
         tags: ["jollof", "seasoning", "spice"],
@@ -734,7 +719,7 @@ async function main() {
         description:
           "Hand-selected melon seeds for rich, authentic Egusi soup. Ground fresh on demand.",
         category: "GROCERIES",
-        price: 1200,
+        price: 12.00,
         weightKg: 1.0,
         isPerishable: false,
         tags: ["egusi", "soup", "seeds"],
@@ -751,7 +736,7 @@ async function main() {
         description:
           "Crispy, spicy plantain chips made from ripe plantains. A perfect snack or side.",
         category: "GROCERIES",
-        price: 450,
+        price: 4.50,
         weightKg: 0.2,
         isPerishable: false,
         tags: ["snack", "plantain", "spicy"],
@@ -768,7 +753,7 @@ async function main() {
         description:
           "Crunchy, sweet chin chin made with love. The perfect Nigerian snack for any occasion.",
         category: "GROCERIES",
-        price: 500,
+        price: 5.00,
         weightKg: 0.3,
         isPerishable: false,
         tags: ["snack", "chin-chin", "sweet"],
@@ -785,7 +770,7 @@ async function main() {
         description:
           "Handmade African black soap with shea butter and cocoa pod ash. Gentle on all skin types.",
         category: "BEAUTY",
-        price: 600,
+        price: 6.00,
         weightKg: 0.2,
         isPerishable: false,
         tags: ["soap", "skincare", "natural"],
@@ -849,20 +834,20 @@ async function main() {
   await db.seoSettings.createMany({
     data: [
       {
-        tenantId: naijapantry.id,
+        tenantId: tom.id,
         pageType: "home",
         pageSlug: null,
-        metaTitle: "NaijaPantry — Authentic Nigerian Foods Delivered Fresh",
+        metaTitle: "Taste of Motherland — Authentic African Foods Delivered Fresh",
         metaDescription:
-          "Shop 500+ authentic Nigerian groceries, spices, drinks and beauty products with same-day delivery in Lagos.",
-        canonicalUrl: "https://naijapantry.com",
+          "Shop 500+ authentic African groceries, spices, drinks and beauty products delivered across the UK.",
+        canonicalUrl: "https://tmfoods.co.uk",
         jsonLd: JSON.stringify({
           "@context": "https://schema.org",
           "@type": "Store",
-          name: "NaijaPantry",
+          name: "Taste of Motherland",
           description:
-            "Authentic Nigerian foods delivered fresh to your doorstep.",
-          url: "https://naijapantry.com",
+            "Authentic African foods delivered fresh to your doorstep.",
+          url: "https://tmfoods.co.uk",
         }),
       },
       {
@@ -891,7 +876,7 @@ async function main() {
   await db.onboardingProgress.createMany({
     data: [
       {
-        tenantId: naijapantry.id,
+        tenantId: tom.id,
         branding: true,
         domain: true,
         warehouse: true,
@@ -916,9 +901,9 @@ async function main() {
   });
 
   console.log("✅ Seed complete!");
-  console.log("   Tenants: NaijaPantry, Toks Mimi Foods");
+  console.log("   Tenants: Taste of Motherland, Toks Mimi Foods");
   console.log("   Super Admin: admin@authentifactor.com / admin123456");
-  console.log("   NP Customer: chioma@example.com / customer123");
+  console.log("   TOM Customer: chioma@example.com / customer123");
   console.log("   TM Customer: toks@example.com / customer123");
 }
 

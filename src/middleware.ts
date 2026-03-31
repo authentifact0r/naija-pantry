@@ -10,7 +10,7 @@ function resolveTenantSlug(request: NextRequest): string {
 
   const host = request.headers.get("host") ?? "";
 
-  // Skip subdomain extraction for platform hosts (e.g., naija-pantry.vercel.app)
+  // Skip subdomain extraction for platform hosts (e.g., *.vercel.app)
   const isPlatformHost = PLATFORM_HOSTS.some((ph) => host.endsWith(ph));
   if (isPlatformHost) return "taste-of-motherland";
 

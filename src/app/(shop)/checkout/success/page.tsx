@@ -25,7 +25,7 @@ export default async function CheckoutSuccessPage({ searchParams }: Props) {
             </p>
           )}
           <p className="mt-4 text-gray-600">
-            Thank you for shopping with NaijaPantry. We&apos;ll send you a confirmation
+            Thank you for your order. We&apos;ll send you a confirmation
             email shortly with your order details.
           </p>
           <div className="mt-8 flex flex-col gap-3">

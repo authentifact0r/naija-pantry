@@ -62,7 +62,7 @@ const features = [
 ];
 
 const tenantShowcase = [
-  { name: "NaijaPantry", color: "#064E3B" },
+  { name: "Taste of Motherland", color: "#064E3B" },
   { name: "Toks Mimi Foods", color: "#7C3AED" },
 ];
 

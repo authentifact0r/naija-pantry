@@ -12,7 +12,7 @@ function resolveTenantSlug(request: NextRequest): string {
   if (parts.length >= 3) return parts[0];
 
   // Default tenant for localhost / single-domain setup
-  return "naijapantry";
+  return "taste-of-motherland";
 }
 
 const protectedPrefixes = ["/account", "/admin"];

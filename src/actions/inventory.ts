@@ -59,7 +59,7 @@ export async function createProduct(formData: FormData): Promise<void> {
   redirect("/admin/products");
 }
 
-export async function updateProduct(productId: string, formData: FormData) {
+export async function updateProduct(productId: string, formData: FormData): Promise<void> {
   await requireAdmin();
 
   const parsed = productSchema.safeParse({
@@ -77,7 +77,7 @@ export async function updateProduct(productId: string, formData: FormData) {
   });
 
   if (!parsed.success) {
-    return { error: parsed.error.issues[0].message };
+    redirect(`/admin/products/${productId}?error=` + encodeURIComponent(parsed.error.issues[0].message));
   }
 
   const { tags, ...data } = parsed.data;
@@ -92,7 +92,7 @@ export async function updateProduct(productId: string, formData: FormData) {
 
   revalidatePath("/admin/products");
   revalidatePath("/products");
-  return { success: true };
+  redirect("/admin/products");
 }
 
 export async function batchUpdatePrices(

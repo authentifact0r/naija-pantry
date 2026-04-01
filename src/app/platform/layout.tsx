@@ -17,10 +17,9 @@ export default function PlatformLayout({
               alt="Authentifactor"
               width={375}
               height={375}
-              className="h-16 w-auto rounded-lg bg-white/95 p-1.5"
+              className="h-20 w-auto"
               priority
             />
-            <span className="text-xl font-bold text-white tracking-tight hidden sm:block">Authentifactor</span>
           </Link>
           <nav className="flex items-center gap-6">
             <Link
@@ -59,16 +58,13 @@ export default function PlatformLayout({
         <div className="mx-auto max-w-7xl px-6">
           <div className="grid gap-12 md:grid-cols-4">
             <div className="md:col-span-2">
-              <div className="flex items-center gap-3">
-                <Image
-                  src="/images/authentifactor-logo.png"
-                  alt="Authentifactor"
-                  width={375}
-                  height={375}
-                  className="h-14 w-auto rounded-lg bg-white/95 p-1"
-                />
-                <span className="text-xl font-bold text-white tracking-tight">Authentifactor</span>
-              </div>
+              <Image
+                src="/images/authentifactor-logo.png"
+                alt="Authentifactor"
+                width={375}
+                height={375}
+                className="h-16 w-auto"
+              />
               <p className="mt-4 max-w-md text-sm leading-relaxed text-gray-400">
                 We architect the digital infrastructure that powers ambitious
                 brands. From e-commerce to fashion, food retail to SaaS — your

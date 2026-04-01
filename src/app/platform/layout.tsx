@@ -10,14 +10,14 @@ export default function PlatformLayout({
     <div className="min-h-screen bg-[#fafafa]">
       {/* Header */}
       <header className="fixed top-0 z-50 w-full border-b border-white/10 bg-gray-950/80 backdrop-blur-xl">
-        <div className="mx-auto flex h-20 max-w-7xl items-center justify-between px-6">
+        <div className="mx-auto flex h-24 max-w-7xl items-center justify-between px-6">
           <Link href="/platform" className="flex items-center gap-3">
             <Image
               src="/images/authentifactor-logo.png"
               alt="Authentifactor"
               width={180}
               height={48}
-              className="h-10 w-auto"
+              className="h-14 w-auto"
               priority
             />
           </Link>
@@ -51,7 +51,7 @@ export default function PlatformLayout({
       </header>
 
       {/* Content */}
-      <main className="pt-20">{children}</main>
+      <main className="pt-24">{children}</main>
 
       {/* Footer */}
       <footer className="bg-gray-950 py-16">

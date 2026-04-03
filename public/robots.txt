@@ -1,0 +1,11 @@
+User-agent: *
+Allow: /platform
+Allow: /login
+Allow: /register
+Disallow: /admin
+Disallow: /superadmin
+Disallow: /api
+Disallow: /account
+Disallow: /billing-issue
+
+Sitemap: https://authentifactor.com/sitemap-platform.xml

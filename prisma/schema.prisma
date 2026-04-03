@@ -56,8 +56,10 @@ model Tenant {
   lastPaymentStatus      String?  // succeeded | failed | pending
   lastPaymentDate        DateTime?
   billingEmail           String?  // override for billing notifications
+  hostingProvider        String   @default("vercel") // gcp | vercel
 
   tenantUsers      TenantUser[]
+  usageRecords     TenantUsage[]
   products         Product[]
   warehouses       Warehouse[]
   inventoryBatches InventoryBatch[]
@@ -478,4 +480,45 @@ model OnboardingProgress {
   updatedAt   DateTime @updatedAt
 
   @@map("onboarding_progress")
+}
+
+// ─── USAGE BILLING ─────────────────────────────────────────
+
+model TenantUsage {
+  id          String   @id @default(cuid())
+  tenantId    String
+  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  periodStart DateTime
+  periodEnd   DateTime
+  reportedAt  DateTime @default(now())
+
+  // GCP usage
+  gcpCloudRunRequests     Int      @default(0)
+  gcpCloudRunCpuSeconds   Float    @default(0)
+  gcpCloudRunMemoryGbHrs  Float    @default(0)
+  gcpFirestoreReads       Int      @default(0)
+  gcpFirestoreWrites      Int      @default(0)
+  gcpFirestoreStorageGb   Float    @default(0)
+  gcpStorageGb            Float    @default(0)
+  gcpStorageEgressGb      Float    @default(0)
+
+  // Vercel usage
+  vercelBuildMinutes          Float  @default(0)
+  vercelServerlessInvocations Int    @default(0)
+  vercelBandwidthGb           Float  @default(0)
+  vercelImageOptimizations    Int    @default(0)
+  vercelEdgeRequests          Int    @default(0)
+
+  // Computed cost
+  gcpCostGbp     Float  @default(0)
+  vercelCostGbp  Float  @default(0)
+  totalCostGbp   Float  @default(0)
+
+  // Stripe metered billing
+  stripeReported Boolean @default(false) // whether usage was sent to Stripe
+
+  @@unique([tenantId, periodStart, periodEnd])
+  @@index([tenantId])
+  @@map("tenant_usage")
 }

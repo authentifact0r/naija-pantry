@@ -56,7 +56,20 @@ model Tenant {
   lastPaymentStatus      String?  // succeeded | failed | pending
   lastPaymentDate        DateTime?
   billingEmail           String?  // override for billing notifications
-  hostingProvider        String   @default("vercel") // gcp | vercel
+  hostingProvider        String   @default("vercel") // gcp | vercel | hybrid
+
+  // Last invoice breakdown (updated by webhook)
+  lastInvoiceTotalGbp       Float?
+  lastInvoiceBaseRetainerGbp Float?
+  lastInvoiceHostingUsageGbp Float?
+  lastInvoiceBackendUsageGbp Float?
+
+  // Stripe metered subscription items
+  stripeHostingItemId    String?  // subscription_item for hosting usage
+  stripeBackendItemId    String?  // subscription_item for backend usage
+
+  // Vercel project mapping
+  vercelProjectId        String?
 
   tenantUsers      TenantUser[]
   usageRecords     TenantUsage[]

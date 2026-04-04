@@ -32,6 +32,25 @@ export async function POST(request: NextRequest) {
         });
 
         if (tenant) {
+          // Parse invoice line items for split billing
+          const lines = invoice.lines?.data || [];
+          let baseRetainer = 0;
+          let hostingUsage = 0;
+          let backendUsage = 0;
+
+          for (const line of lines) {
+            const meta = line.price?.metadata || line.metadata || {};
+            if (meta.type === "hosting") {
+              hostingUsage += (line.amount || 0) / 100;
+            } else if (meta.type === "backend") {
+              backendUsage += (line.amount || 0) / 100;
+            } else {
+              baseRetainer += (line.amount || 0) / 100;
+            }
+          }
+
+          const totalGbp = (invoice.amount_paid || 0) / 100;
+
           await prisma.tenant.update({
             where: { id: tenant.id },
             data: {
@@ -41,6 +60,10 @@ export async function POST(request: NextRequest) {
               nextInvoiceDate: invoice.next_payment_attempt
                 ? new Date(invoice.next_payment_attempt * 1000)
                 : null,
+              lastInvoiceTotalGbp: totalGbp,
+              lastInvoiceBaseRetainerGbp: baseRetainer,
+              lastInvoiceHostingUsageGbp: hostingUsage,
+              lastInvoiceBackendUsageGbp: backendUsage,
             },
           });
         }

@@ -19,10 +19,15 @@ export default async function AdminOrdersPage() {
         address: true,
         warehouse: { select: { name: true } },
         items: { include: { product: { select: { name: true, sku: true, images: true, price: true } } } },
-        user: { select: { firstName: true, lastName: true, email: true, phone: true } },
       },
       orderBy: { createdAt: "desc" },
     });
+    // Fetch user info separately (not available through scoped extend)
+    for (const o of orders) {
+      const { db: rawDb } = await import("@/lib/db");
+      const user = await rawDb.user.findUnique({ where: { id: o.userId }, select: { firstName: true, lastName: true, email: true, phone: true } });
+      (o as any).user = user;
+    }
     products = await tdb.product.findMany({ where: { isActive: true }, select: { id: true, name: true, sku: true, price: true, images: true }, orderBy: { name: "asc" } });
 
     orders = orders.map((o: any) => ({
@@ -34,7 +39,9 @@ export default async function AdminOrdersPage() {
       items: o.items.map((i: any) => ({ ...i, unitPrice: Number(i.unitPrice), totalPrice: Number(i.totalPrice), weightKg: Number(i.weightKg), product: { ...i.product, price: Number(i.product.price) } })),
     }));
     products = products.map((pr: any) => ({ ...pr, price: Number(pr.price) }));
-  } catch {}
+  } catch (err: any) {
+    console.error("[orders] Error:", err.message);
+  }
 
   return <OrdersManager orders={orders} products={products} tenantSlug={tenantSlug} />;
 }

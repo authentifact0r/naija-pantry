@@ -17,7 +17,9 @@ const REQUIRED_HEADERS: Record<string, { label: string; severity: string }> = {
   "x-content-type-options": { label: "X-Content-Type-Options", severity: "medium" },
   "referrer-policy": { label: "Referrer-Policy", severity: "medium" },
   "permissions-policy": { label: "Permissions-Policy", severity: "low" },
-  "content-security-policy": { label: "CSP", severity: "medium" },
+  "content-security-policy": { label: "CSP", severity: "high" },
+  "cross-origin-resource-policy": { label: "CORP", severity: "low" },
+  "x-xss-protection": { label: "X-XSS-Protection", severity: "low" },
 };
 
 async function checkSSL(domain: string) {

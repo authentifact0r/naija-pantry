@@ -33,6 +33,7 @@ export default async function AdminOrdersPage() {
     orders = orders.map((o: any) => ({
       ...o,
       subtotal: Number(o.subtotal), shippingCost: Number(o.shippingCost),
+      tax: Number(o.tax || 0), discount: Number(o.discount || 0),
       total: Number(o.total), totalWeightKg: Number(o.totalWeightKg),
       createdAt: o.createdAt.toISOString(), updatedAt: o.updatedAt.toISOString(),
       shippedAt: o.shippedAt?.toISOString() || null, deliveredAt: o.deliveredAt?.toISOString() || null,

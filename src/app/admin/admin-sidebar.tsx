@@ -10,7 +10,6 @@ import { cn } from "@/lib/utils";
 
 const navItems = [
   { href: "/admin", label: "Dashboard", icon: BarChart3 },
-  { href: "/admin/billing", label: "Billing", icon: CreditCard },
   { href: "/admin/products", label: "Products", icon: Package },
   { href: "/admin/inventory", label: "Inventory", icon: Box },
   { href: "/admin/orders", label: "Orders", icon: ShoppingCart },
@@ -20,6 +19,7 @@ const navItems = [
   { href: "/admin/team", label: "Team", icon: Users },
   { href: "/admin/branding", label: "Branding", icon: Palette },
   { href: "/admin/seo", label: "SEO", icon: Search },
+  { href: "/admin/billing", label: "Account & Billing", icon: CreditCard },
 ];
 
 interface Props {

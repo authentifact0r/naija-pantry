@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import {
   ShoppingCart, Package, Truck, CheckCircle, XCircle, Clock,
   ChevronDown, ChevronRight, User, MapPin, CreditCard,
@@ -24,6 +25,7 @@ interface Props {
 }
 
 export function OrdersManager({ orders, products, tenantSlug }: Props) {
+  const router = useRouter();
   const [expanded, setExpanded] = useState<string | null>(null);
   const [saving, setSaving] = useState<string | null>(null);
   const [trackingInput, setTrackingInput] = useState<Record<string, string>>({});
@@ -39,13 +41,25 @@ export function OrdersManager({ orders, products, tenantSlug }: Props) {
   const updateStatus = async (orderId: string, newStatus: string) => {
     setSaving(orderId);
     try {
-      await fetch("/api/admin/orders/update", {
+      const res = await fetch("/api/admin/orders/update", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ orderId, status: newStatus, trackingNumber: trackingInput[orderId] || null, notes: notesInput[orderId] || null }),
       });
-      window.location.reload();
-    } catch { setSaving(null); }
+      if (!res.ok) {
+        const err = await res.json();
+        alert("Update failed: " + (err.error || "Unknown error"));
+        setSaving(null);
+        return;
+      }
+      // Refresh server data (re-runs the server component)
+      router.refresh();
+      setSaving(null);
+      setExpanded(null);
+    } catch (err) {
+      alert("Network error. Please try again.");
+      setSaving(null);
+    }
   };
 
   const cancelOrder = async (orderId: string) => {

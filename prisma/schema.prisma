@@ -184,6 +184,18 @@ model Product {
   createdAt       DateTime        @default(now())
   updatedAt       DateTime        @updatedAt
 
+  // SEO fields
+  metaTitle       String?         // SEO title (max 60 chars)
+  metaDescription String?         // SEO description (max 160 chars)
+  seoKeywords     String[]        // SEO keywords
+  // Rich content
+  shortDescription String?        // Tagline / one-liner for cards
+  material        String?         // e.g. "100% Cashmere"
+  careInstructions String?        // e.g. "Dry clean only"
+  sizes           String[]        // e.g. ["XS", "S", "M", "L", "XL"]
+  colors          String[]        // e.g. ["Black", "Ivory", "Burgundy"]
+  brand           String?         // e.g. "Styled by Maryam"
+
   inventoryBatches InventoryBatch[]
   cartItems        CartItem[]
   orderItems       OrderItem[]
